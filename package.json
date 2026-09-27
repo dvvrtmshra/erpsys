@@ -1,0 +1,12 @@
+{
+  "name": "erpsys",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": ["backend", "frontend"],
+  "scripts": {
+    "start": "node backend/src/index.js",
+    "dev:backend": "nodemon backend/src/index.js",
+    "dev:frontend": "npm run dev --workspace=frontend",
+    "db:init": "node -e \"require('dotenv').config({path:'backend/.env'}); const {Pool}=require('pg'); const fs=require('fs'); const pool=new Pool({host:process.env.DB_HOST,port:process.env.DB_PORT,database:process.env.DB_NAME,user:'postgres',password:'294657'}); pool.query(fs.readFileSync('database/schema.sql','utf8')).then(()=>{console.log('Schema applied');pool.end()}).catch(e=>{console.error(e);pool.end()});\""
+  }
+}
