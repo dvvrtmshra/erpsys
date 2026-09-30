@@ -29,8 +29,12 @@ export default function Users() {
 
   const del = async id => {
     if (!confirm('Delete this user?')) return;
-    await api.delete(`/users/${id}`);
-    load();
+    try {
+      await api.delete(`/users/${id}`);
+      load();
+    } catch (err) {
+      setError(err.response?.data?.error || 'Delete failed');
+    }
   };
 
   return (
@@ -88,4 +92,3 @@ export default function Users() {
     </div>
   );
 }
-  //hello bkl commit kr le ;)
