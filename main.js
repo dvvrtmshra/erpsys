@@ -4,21 +4,26 @@ const path = require('path');
 const fs = require('fs');
 const net = require('net');
 
-// appDir resolved after app is ready (app.isPackaged only valid then)
-let appDir;
+app.setName('ERP System');
+
+// Two roots:
+//   binDir  — read-only install resources (postgres binaries, backend.exe, frontend)
+//   dataDir — writable user data (pgdata, logs, uploads)
+let binDir;
+let dataDir;
 
 const BACKEND_PORT = 3002;
 const PG_PORT = 5433;
 
-// Lazy path helpers — only valid after appDir is set in whenReady
+// Lazy path helpers — only valid after dirs are set in whenReady
 const paths = () => {
-  const PG_BIN = path.join(appDir, 'postgres', 'bin');
+  const PG_BIN = path.join(binDir, 'postgres', 'bin');
   return {
-    PG_DATA:     path.join(appDir, 'pgdata'),
+    PG_DATA:     path.join(dataDir, 'pgdata'),
     pgCtl:       path.join(PG_BIN, 'pg_ctl.exe'),
     psql:        path.join(PG_BIN, 'psql.exe'),
-    SCHEMA_FILE: path.join(appDir, 'database', 'schema.sql'),
-    BACKEND_EXE: path.join(appDir, 'dist', 'backend.exe'),
+    SCHEMA_FILE: path.join(binDir, 'database', 'schema.sql'),
+    BACKEND_EXE: path.join(binDir, 'backend.exe'),
   };
 };
 
@@ -43,7 +48,7 @@ function waitForPort(port, timeout = 30000) {
 }
 
 function log(msg) {
-  const logFile = path.join(appDir, 'erp.log');
+  const logFile = path.join(dataDir, 'erp.log');
   fs.appendFileSync(logFile, `[${new Date().toISOString()}] ${msg}\n`);
   console.log(msg);
 }
@@ -51,10 +56,28 @@ function log(msg) {
 // ── PostgreSQL ────────────────────────────────────────────────────────────────
 
 function initDb() {
-  const { PG_DATA, pgCtl } = paths();
+  const { PG_DATA } = paths();
+  const initdbExe = path.join(binDir, 'postgres', 'bin', 'initdb.exe');
   log('Initializing PostgreSQL data directory...');
+  // Stop any running postgres before wiping pgdata (avoids EBUSY)
+  const { pgCtl } = paths();
+  if (fs.existsSync(PG_DATA)) {
+    try { execFileSync(pgCtl, ['stop', '-D', PG_DATA, '-m', 'immediate'], { stdio: 'pipe' }); } catch (_) {}
+    // Wait briefly for postgres to release file locks
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 1500);
+    try {
+      fs.rmSync(PG_DATA, { recursive: true, force: true });
+    } catch (e) {
+      throw new Error(`Could not remove old pgdata (${e.message}). Please restart your PC and try again.`);
+    }
+    log('Removed partial pgdata, starting fresh.');
+  }
   fs.mkdirSync(PG_DATA, { recursive: true });
-  execFileSync(pgCtl, ['initdb', '-D', PG_DATA], { env: { ...process.env, PGPASSWORD: '' }, stdio: 'pipe' });
+  try {
+    execFileSync(initdbExe, ['-D', PG_DATA, '-U', 'postgres', '-A', 'trust'], { env: { ...process.env, PGPASSWORD: '' }, stdio: 'pipe' });
+  } catch (e) {
+    throw new Error(`initdb failed: ${e.stderr ? e.stderr.toString() : e.message}`);
+  }
 
   const pgHba = path.join(PG_DATA, 'pg_hba.conf');
   let hba = fs.readFileSync(pgHba, 'utf8');
@@ -69,14 +92,31 @@ function initDb() {
 function startPostgres() {
   const { PG_DATA, pgCtl } = paths();
   return new Promise((resolve, reject) => {
-    if (!fs.existsSync(path.join(PG_DATA, 'PG_VERSION'))) initDb();
+    const schemaApplied = fs.existsSync(path.join(PG_DATA, '.schema_applied'));
+    if (!fs.existsSync(path.join(PG_DATA, 'PG_VERSION')) || !schemaApplied) {
+      // No pgdata OR previous init failed before schema was applied — start fresh
+      initDb();
+    }
 
     log('Starting PostgreSQL...');
-    const pgLog = path.join(appDir, 'postgres.log');
+    const pgLog = path.join(dataDir, 'postgres.log');
     const proc = spawn(pgCtl, ['start', '-D', PG_DATA, '-l', pgLog, '-w'], { stdio: 'pipe' });
     proc.on('close', code => {
-      if (code === 0) { log('PostgreSQL started.'); resolve(); }
-      else reject(new Error(`pg_ctl start failed with code ${code}`));
+      if (code === 0) { log('PostgreSQL started.'); resolve(); return; }
+      // code 1 can mean "already running" — verify by checking the port
+      const sock = require('net').createConnection({ port: PG_PORT, host: '127.0.0.1' });
+      sock.once('connect', () => {
+        sock.destroy();
+        log('PostgreSQL was already running, continuing.');
+        resolve();
+      });
+      sock.once('error', () => {
+        sock.destroy();
+        const pgLogContent = fs.existsSync(pgLog)
+          ? fs.readFileSync(pgLog, 'utf8').split('\n').slice(-15).join('\n')
+          : '(no log file)';
+        reject(new Error(`pg_ctl start failed (code ${code}):\n\n${pgLogContent}`));
+      });
     });
   });
 }
@@ -96,9 +136,20 @@ function applySchema() {
   const markerFile = path.join(PG_DATA, '.schema_applied');
   if (fs.existsSync(markerFile)) return;
   log('Applying database schema...');
-  execFileSync(psql, ['-U', 'postgres', '-p', String(PG_PORT), '-d', 'postgres', '-f', SCHEMA_FILE], {
-    env: { ...process.env, PGPASSWORD: '' }, stdio: 'pipe',
-  });
+  const env = { ...process.env, PGPASSWORD: '' };
+  const run = (db, sql) => execFileSync(psql,
+    ['-U', 'postgres', '-p', String(PG_PORT), '-d', db, '-c', sql],
+    { env, stdio: 'pipe' }
+  );
+  try {
+    // Create role and database (ignore errors if they already exist)
+    try { run('postgres', "CREATE ROLE erp_user WITH LOGIN PASSWORD 'erppass123';"); } catch (_) {}
+    try { run('postgres', 'CREATE DATABASE erp_db OWNER erp_user;'); } catch (_) {}
+    // Apply tables to erp_db
+    execFileSync(psql, ['-U', 'postgres', '-p', String(PG_PORT), '-d', 'erp_db', '-f', SCHEMA_FILE], { env, stdio: 'pipe' });
+  } catch (e) {
+    throw new Error(`Schema apply failed: ${e.stderr ? e.stderr.toString() : e.message}`);
+  }
   fs.writeFileSync(markerFile, new Date().toISOString());
   log('Schema applied.');
 }
@@ -119,6 +170,7 @@ function startBackend() {
     SESSION_SECRET: 'erp_packaged_secret',
     FRONTEND_URL: `http://localhost:${BACKEND_PORT}`,
     NODE_ENV: 'production',
+    UPLOADS_DIR: path.join(dataDir, 'uploads'),
   };
   let restartCount = 0;
   const MAX_RESTARTS = 5;
@@ -167,15 +219,21 @@ function createWindow() {
 // ── App lifecycle ─────────────────────────────────────────────────────────────
 
 app.whenReady().then(async () => {
-  // Resolve appDir now that app is ready
-  appDir = app.isPackaged ? process.resourcesPath : __dirname;
+  if (app.isPackaged) {
+    binDir  = process.resourcesPath;                    // C:\Program Files\ERP System\resources
+    dataDir = app.getPath('userData');                  // C:\Users\HP\AppData\Roaming\ERP System
+  } else {
+    binDir  = __dirname;
+    dataDir = __dirname;
+  }
+  fs.mkdirSync(dataDir, { recursive: true });
   const isPackaged = app.isPackaged;
 
   try {
     if (isPackaged) {
       // Packaged: start embedded postgres + backend.exe
       await startPostgres();
-      await waitForPort(PG_PORT);
+      await waitForPort(PG_PORT, 60000);
       applySchema();
       startBackend();
       await waitForPort(BACKEND_PORT);

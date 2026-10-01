@@ -19,8 +19,10 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-const appRoot = process.pkg ? path.dirname(process.execPath) : path.join(__dirname, '../../');
-app.use('/uploads', require('express').static(path.join(appRoot, 'uploads')));
+const uploadsDir = process.env.UPLOADS_DIR ||
+  (process.pkg ? path.join(path.dirname(process.execPath), 'uploads') : path.join(__dirname, '../../uploads'));
+require('fs').mkdirSync(uploadsDir, { recursive: true });
+app.use('/uploads', require('express').static(uploadsDir));
 
 app.use(session({
   store: new pgSession({

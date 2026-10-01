@@ -9,8 +9,8 @@ const router = express.Router();
 router.use(requireAuth);
 
 // Resolve uploads dir relative to exe when packaged, or project root in dev
-const appRoot = process.pkg ? path.dirname(process.execPath) : path.join(__dirname, '../../../..');
-const uploadsDir = path.join(appRoot, 'uploads');
+const uploadsDir = process.env.UPLOADS_DIR ||
+  (process.pkg ? path.join(path.dirname(process.execPath), 'uploads') : path.join(__dirname, '../../../..', 'uploads'));
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
 router.get('/', async (req, res) => {
