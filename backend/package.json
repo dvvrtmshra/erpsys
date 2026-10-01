@@ -6,6 +6,16 @@
     "start": "node src/index.js",
     "dev": "nodemon src/index.js"
   },
+  "pkg": {
+    "scripts": "src/**/*.js",
+    "assets": [
+      "../frontend/dist/**/*",
+      "../database/schema.sql",
+      ".env"
+    ],
+    "targets": ["node18-win-x64"],
+    "outputPath": "../dist"
+  },
   "dependencies": {
     "bcryptjs": "*",
     "connect-pg-simple": "*",

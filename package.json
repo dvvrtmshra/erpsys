@@ -2,11 +2,49 @@
   "name": "erpsys",
   "version": "1.0.0",
   "private": true,
-  "workspaces": ["backend", "frontend"],
+  "main": "main.js",
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
   "scripts": {
     "start": "node backend/src/index.js",
     "dev:backend": "nodemon backend/src/index.js",
     "dev:frontend": "npm run dev --workspace=frontend",
+    "electron": "SET ELECTRON_RUN_AS_NODE=&& electron .",
+    "dist": "electron-builder --win --x64",
     "db:init": "node -e \"require('dotenv').config({path:'backend/.env'}); const {Pool}=require('pg'); const fs=require('fs'); const pool=new Pool({host:process.env.DB_HOST,port:process.env.DB_PORT,database:process.env.DB_NAME,user:'postgres',password:'294657'}); pool.query(fs.readFileSync('database/schema.sql','utf8')).then(()=>{console.log('Schema applied');pool.end()}).catch(e=>{console.error(e);pool.end()});\""
+  },
+  "build": {
+    "appId": "com.erpsys.app",
+    "productName": "ERP System",
+    "directories": {
+      "output": "installer"
+    },
+    "files": [
+      "main.js"
+    ],
+    "extraResources": [
+      {
+        "from": "dist/",
+        "to": ".",
+        "filter": ["**/*"]
+      }
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "ERP System"
+    }
+  },
+  "devDependencies": {
+    "electron": "^28.3.3",
+    "electron-builder": "^26.15.3"
   }
 }

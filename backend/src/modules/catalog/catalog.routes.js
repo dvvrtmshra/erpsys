@@ -8,8 +8,9 @@ const upload = require('../../middleware/upload');
 const router = express.Router();
 router.use(requireAuth);
 
-// Ensure uploads directory exists
-const uploadsDir = path.join(__dirname, '../../../../uploads');
+// Resolve uploads dir relative to exe when packaged, or project root in dev
+const appRoot = process.pkg ? path.dirname(process.execPath) : path.join(__dirname, '../../../..');
+const uploadsDir = path.join(appRoot, 'uploads');
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
 router.get('/', async (req, res) => {

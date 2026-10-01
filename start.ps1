@@ -25,4 +25,13 @@ Write-Host "Starting backend..."
 Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$projectRoot'; node backend/src/index.js" -WindowStyle Normal
 Write-Host "[OK] Backend starting on http://localhost:3002"
 Write-Host ""
-Write-Host "Run 'npm run dev' in $projectRoot\frontend to start the frontend."
+Write-Host "Waiting for backend to start..."
+Start-Sleep 3
+
+# Launch Electron app (clears ELECTRON_RUN_AS_NODE set by VSCode terminal)
+Write-Host "Starting Electron..."
+$electronExe = "$projectRoot\node_modules\electron\dist\electron.exe"
+$env:ELECTRON_RUN_AS_NODE = $null
+[System.Environment]::SetEnvironmentVariable("ELECTRON_RUN_AS_NODE", $null, "Process")
+Start-Process -FilePath $electronExe -ArgumentList "." -WorkingDirectory $projectRoot
+Write-Host "[OK] Electron launched"

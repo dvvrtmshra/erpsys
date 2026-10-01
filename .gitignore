@@ -57,6 +57,14 @@ coverage/
 frontend/.vite/
 frontend/node_modules/.vite/
 
+# Electron/pkg build output — all generated, never commit
+dist/
+installer/
+out/
+
+# Electron packaging cache
+.webpack/
+
 # Misc
 *.tmp
 .cache/

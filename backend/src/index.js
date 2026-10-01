@@ -19,7 +19,8 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use('/uploads', require('express').static(require('path').join(__dirname, '../../uploads')));
+const appRoot = process.pkg ? path.dirname(process.execPath) : path.join(__dirname, '../../');
+app.use('/uploads', require('express').static(path.join(appRoot, 'uploads')));
 
 app.use(session({
   store: new pgSession({
@@ -49,6 +50,15 @@ app.use('/api/accounting', require('./modules/accounting/accounting.routes'));
 app.use('/api/users', require('./modules/users/users.routes'));
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
+
+// Serve React frontend in production
+const frontendDist = process.pkg
+  ? path.join(path.dirname(process.execPath), 'frontend', 'dist')
+  : path.join(__dirname, '../../frontend/dist');
+if (require('fs').existsSync(frontendDist)) {
+  app.use(express.static(frontendDist));
+  app.get('*', (req, res) => res.sendFile(path.join(frontendDist, 'index.html')));
+}
 
 app.use((err, req, res, next) => {
   console.error(err.stack);
