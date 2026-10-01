@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS catalog_items (
   description TEXT,
   unit_price DECIMAL(12,2) DEFAULT 0,
   unit VARCHAR(20) DEFAULT 'unit',
+  image_url VARCHAR(500),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -87,12 +88,31 @@ CREATE TABLE IF NOT EXISTS tenders (
   id SERIAL PRIMARY KEY,
   title VARCHAR(200) NOT NULL,
   description TEXT,
-  status VARCHAR(20) DEFAULT 'open' CHECK (status IN ('open','closed','awarded','cancelled')),
+  tender_type VARCHAR(20) DEFAULT 'private' CHECK (tender_type IN ('government','private')),
+  issued_by VARCHAR(200),
+  awarded_to VARCHAR(200),
+  status VARCHAR(20) DEFAULT 'open' CHECK (status IN ('open','bidding','awarded','in_progress','completed','cancelled')),
   deadline DATE,
   budget DECIMAL(12,2),
-  awarded_supplier_id INTEGER REFERENCES suppliers(id),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS tender_suppliers (
+  id SERIAL PRIMARY KEY,
+  tender_id INTEGER REFERENCES tenders(id) ON DELETE CASCADE,
+  supplier_id INTEGER REFERENCES suppliers(id) ON DELETE CASCADE,
+  material_notes TEXT,
+  UNIQUE(tender_id, supplier_id)
+);
+
+CREATE TABLE IF NOT EXISTS tender_items (
+  id SERIAL PRIMARY KEY,
+  tender_id INTEGER REFERENCES tenders(id) ON DELETE CASCADE,
+  item_id INTEGER REFERENCES catalog_items(id) ON DELETE CASCADE,
+  quantity_needed DECIMAL(12,2) DEFAULT 0,
+  notes TEXT,
+  UNIQUE(tender_id, item_id)
 );
 
 CREATE TABLE IF NOT EXISTS accounting_entries (

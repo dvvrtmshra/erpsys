@@ -1,6 +1,6 @@
 const express = require('express');
 const pool = require('../../db');
-const { requireAuth } = require('../../middleware/auth');
+const { requireAuth, requireRole } = require('../../middleware/auth');
 
 const router = express.Router();
 router.use(requireAuth);
@@ -8,9 +8,13 @@ router.use(requireAuth);
 router.get('/', async (req, res) => {
   try {
     const { rows } = await pool.query(`
-      SELECT i.*, c.name AS item_name, c.sku, c.unit
-      FROM inventory i
-      JOIN catalog_items c ON c.id = i.item_id
+      SELECT c.id AS item_id, c.name AS item_name, c.sku, c.unit,
+             COALESCE(i.id, NULL) AS id,
+             COALESCE(i.quantity, 0) AS quantity,
+             i.location,
+             i.updated_at
+      FROM catalog_items c
+      LEFT JOIN inventory i ON i.item_id = c.id
       ORDER BY c.name
     `);
     res.json(rows);
@@ -20,7 +24,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.put('/:itemId', async (req, res) => {
+router.put('/:itemId', requireRole('admin', 'manager'), async (req, res) => {
   const { quantity, location } = req.body;
   try {
     const { rows } = await pool.query(`
@@ -36,7 +40,7 @@ router.put('/:itemId', async (req, res) => {
   }
 });
 
-router.patch('/:itemId/adjust', async (req, res) => {
+router.patch('/:itemId/adjust', requireRole('admin', 'manager'), async (req, res) => {
   const { delta } = req.body;
   try {
     const { rows } = await pool.query(`

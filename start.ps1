@@ -23,6 +23,6 @@ if ($pgRunning) {
 # Start backend in a new window
 Write-Host "Starting backend..."
 Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$projectRoot'; node backend/src/index.js" -WindowStyle Normal
-Write-Host "[OK] Backend starting on http://localhost:3001"
+Write-Host "[OK] Backend starting on http://localhost:3002"
 Write-Host ""
 Write-Host "Run 'npm run dev' in $projectRoot\frontend to start the frontend."
