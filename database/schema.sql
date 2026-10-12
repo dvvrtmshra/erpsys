@@ -31,8 +31,9 @@ CREATE TABLE IF NOT EXISTS customers (
 
 CREATE TABLE IF NOT EXISTS catalog_items (
   id SERIAL PRIMARY KEY,
-  sku VARCHAR(50) UNIQUE NOT NULL,
+  catalog_number VARCHAR(50) UNIQUE NOT NULL,
   name VARCHAR(200) NOT NULL,
+  category VARCHAR(100),
   description TEXT,
   unit_price DECIMAL(12,2) DEFAULT 0,
   unit VARCHAR(20) DEFAULT 'unit',
@@ -41,11 +42,16 @@ CREATE TABLE IF NOT EXISTS catalog_items (
 );
 
 CREATE TABLE IF NOT EXISTS inventory (
-  id SERIAL PRIMARY KEY,
-  item_id INTEGER UNIQUE REFERENCES catalog_items(id) ON DELETE CASCADE,
-  quantity DECIMAL(12,2) DEFAULT 0,
-  location VARCHAR(100),
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  id              SERIAL PRIMARY KEY,
+  type            VARCHAR(20) DEFAULT 'raw_material'
+                    CHECK (type IN ('finished_good', 'raw_material')),
+  catalog_item_id INTEGER REFERENCES catalog_items(id) ON DELETE SET NULL,
+  item_name       VARCHAR(200) NOT NULL,
+  description     TEXT,
+  unit            VARCHAR(20) DEFAULT 'unit',
+  quantity        DECIMAL(12,2) DEFAULT 0,
+  location        VARCHAR(100),
+  updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS orders (

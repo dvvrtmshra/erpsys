@@ -9,6 +9,7 @@ import Inventory from './pages/Inventory';
 import Orders from './pages/Orders';
 import OrderForm from './pages/OrderForm';
 import Purchases from './pages/Purchases';
+import Customers from './pages/Customers';
 import Suppliers from './pages/Suppliers';
 import Tenders from './pages/Tenders';
 import TenderForm from './pages/TenderForm';
@@ -26,8 +27,10 @@ export default function App() {
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="catalog" element={<Catalog />} />
             <Route path="inventory" element={<Inventory />} />
+            <Route path="customers" element={<Customers />} />
             <Route path="orders" element={<Orders />} />
             <Route path="orders/new" element={<OrderForm />} />
+            <Route path="orders/:id/edit" element={<OrderForm />} />
             <Route path="purchases" element={<Purchases />} />
             <Route path="suppliers" element={<Suppliers />} />
             <Route path="tenders" element={<Tenders />} />

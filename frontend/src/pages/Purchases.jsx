@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import api from '../api';
+import Modal from '../components/Modal';
 
 const STATUS_COLORS = { pending: '#f39c12', ordered: '#2980b9', received: '#27ae60', cancelled: '#c0392b' };
 const empty = { supplier_id: '', notes: '', items: [{ item_id: '', quantity: 1, unit_price: 0 }] };
@@ -48,8 +49,13 @@ export default function Purchases() {
 
   const del = async id => {
     if (!confirm('Delete?')) return;
-    await api.delete(`/purchases/${id}`);
-    load();
+    setError('');
+    try {
+      await api.delete(`/purchases/${id}`);
+      load();
+    } catch (err) {
+      setError(err.response?.data?.error || 'Delete failed');
+    }
   };
 
   const total = form ? form.items.reduce((s, i) => s + (i.quantity || 0) * (i.unit_price || 0), 0) : 0;
@@ -58,43 +64,42 @@ export default function Purchases() {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <h2>Purchases</h2>
-        <button className="btn-primary" onClick={() => setForm(JSON.parse(JSON.stringify(empty)))}>+ New Purchase</button>
+        <button className="btn-primary" onClick={() => { setForm(JSON.parse(JSON.stringify(empty))); setError(''); }}>+ New Purchase</button>
       </div>
 
+      {error && !form && <p className="error" style={{ marginBottom: 12 }}>{error}</p>}
+
       {form && (
-        <div className="modal-backdrop">
-          <div className="modal" style={{ maxWidth: 620 }}>
-            <h3>New Purchase Order</h3>
-            <form onSubmit={submit}>
-              <label>Supplier
-                <select value={form.supplier_id} onChange={e => setForm({ ...form, supplier_id: e.target.value })}>
-                  <option value="">— select —</option>
-                  {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+        <Modal title="New Purchase Order" onClose={() => setForm(null)} style={{ maxWidth: 620 }}>
+          <form onSubmit={submit}>
+            <label>Supplier
+              <select value={form.supplier_id} onChange={e => setForm({ ...form, supplier_id: e.target.value })}>
+                <option value="">— select —</option>
+                {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+            </label>
+            <label>Notes<textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} /></label>
+            <h4>Items</h4>
+            {form.items.map((item, idx) => (
+              <div key={idx} style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'center' }}>
+                <select value={item.item_id} onChange={e => setLineItem(idx, 'item_id', e.target.value)} style={{ flex: 2 }}>
+                  <option value="">— item —</option>
+                  {catalog.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
-              </label>
-              <label>Notes<textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} /></label>
-              <h4>Items</h4>
-              {form.items.map((item, idx) => (
-                <div key={idx} style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'center' }}>
-                  <select value={item.item_id} onChange={e => setLineItem(idx, 'item_id', e.target.value)} style={{ flex: 2 }}>
-                    <option value="">— item —</option>
-                    {catalog.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
-                  <input type="number" step="0.01" min="0.01" value={item.quantity} onChange={e => setLineItem(idx, 'quantity', parseFloat(e.target.value))} style={{ width: 70 }} placeholder="Qty" />
-                  <input type="number" step="0.01" value={item.unit_price} onChange={e => setLineItem(idx, 'unit_price', parseFloat(e.target.value))} style={{ width: 80 }} placeholder="Price" />
-                  <button type="button" onClick={() => setForm({ ...form, items: form.items.filter((_, i) => i !== idx) })}>✕</button>
-                </div>
-              ))}
-              <button type="button" className="btn-sm" onClick={() => setForm({ ...form, items: [...form.items, { item_id: '', quantity: 1, unit_price: 0 }] })}>+ Add</button>
-              <div style={{ marginTop: 8, fontWeight: 600 }}>Total: {total.toFixed(2)}</div>
-              {error && <p className="error">{error}</p>}
-              <div className="modal-actions">
-                <button type="submit" className="btn-primary">Create</button>
-                <button type="button" onClick={() => setForm(null)}>Cancel</button>
+                <input type="number" step="1" min="1" value={item.quantity} onChange={e => setLineItem(idx, 'quantity', parseInt(e.target.value) || 1)} style={{ width: 70 }} placeholder="Qty" />
+                <input type="number" step="0.01" value={item.unit_price} onChange={e => setLineItem(idx, 'unit_price', parseFloat(e.target.value))} style={{ width: 80 }} placeholder="Price" />
+                <button type="button" onClick={() => setForm({ ...form, items: form.items.filter((_, i) => i !== idx) })}>✕</button>
               </div>
-            </form>
-          </div>
-        </div>
+            ))}
+            <button type="button" className="btn-sm" onClick={() => setForm({ ...form, items: [...form.items, { item_id: '', quantity: 1, unit_price: 0 }] })}>+ Add</button>
+            <div style={{ marginTop: 8, fontWeight: 600 }}>Total: {total.toFixed(2)}</div>
+            {error && <p className="error">{error}</p>}
+            <div className="modal-actions">
+              <button type="submit" className="btn-primary">Create</button>
+              <button type="button" onClick={() => setForm(null)}>Cancel</button>
+            </div>
+          </form>
+        </Modal>
       )}
 
       <table className="data-table">

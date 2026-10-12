@@ -135,6 +135,42 @@ label textarea:focus {
   margin: 4px 0;
 }
 
+.search-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.search-input {
+  padding: 7px 12px;
+  border: 1px solid #d0d7de;
+  border-radius: 4px;
+  font-size: 14px;
+  width: 240px;
+  font-family: inherit;
+}
+.search-input:focus {
+  outline: none;
+  border-color: #0969da;
+  box-shadow: 0 0 0 3px rgba(9,105,218,0.12);
+}
+
+.filter-select {
+  padding: 7px 10px;
+  border: 1px solid #d0d7de;
+  border-radius: 4px;
+  font-size: 14px;
+  font-family: inherit;
+  background: #fff;
+  cursor: pointer;
+}
+.filter-select:focus {
+  outline: none;
+  border-color: #0969da;
+}
+
 .summary-card {
   background: #fff;
   border: 1px solid #e2e8f0;

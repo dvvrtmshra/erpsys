@@ -157,13 +157,13 @@ export default function TenderForm() {
                   <option value="">— select inventory item —</option>
                   {allInventory.map(inv => (
                     <option key={inv.item_id} value={inv.item_id}>
-                      {inv.item_name} ({inv.sku}) — stock: {parseFloat(inv.quantity).toFixed(2)} {inv.unit}
+                      {inv.item_name} ({inv.sku}) — stock: {parseInt(inv.quantity)} {inv.unit}
                     </option>
                   ))}
                 </select>
                 <div style={{ flex: 1, position: 'relative' }}>
                   <input
-                    type="number" step="0.01" placeholder="Qty needed"
+                    type="number" step="1" min="1" placeholder="Qty needed"
                     value={item.quantity_needed}
                     onChange={e => updateItem(i, 'quantity_needed', e.target.value)}
                     style={{ width: '100%', borderColor: insufficient ? '#e74c3c' : '' }}

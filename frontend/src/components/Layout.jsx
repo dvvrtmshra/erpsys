@@ -6,6 +6,7 @@ const navItems = [
   { to: '/dashboard', label: 'Dashboard' },
   { to: '/catalog', label: 'Catalog' },
   { to: '/inventory', label: 'Inventory' },
+  { to: '/customers', label: 'Customers' },
   { to: '/orders', label: 'Orders' },
   { to: '/purchases', label: 'Purchases' },
   { to: '/suppliers', label: 'Suppliers' },

@@ -28,8 +28,11 @@ router.get('/:id', async (req, res) => {
     `, [req.params.id]);
     if (!order.rows[0]) return res.status(404).json({ error: 'Not found' });
     const items = await pool.query(`
-      SELECT oi.*, ci.name AS item_name, ci.sku
-      FROM order_items oi JOIN catalog_items ci ON ci.id = oi.item_id
+      SELECT oi.*,
+        COALESCE(ci.name, oi.custom_item_name) AS item_name,
+        ci.catalog_number, ci.category
+      FROM order_items oi
+      LEFT JOIN catalog_items ci ON ci.id = oi.item_id
       WHERE oi.order_id = $1
     `, [req.params.id]);
     res.json({ ...order.rows[0], items: items.rows });
@@ -51,8 +54,8 @@ router.post('/', async (req, res) => {
     const order = rows[0];
     for (const item of (items || [])) {
       await client.query(
-        'INSERT INTO order_items (order_id, item_id, quantity, unit_price) VALUES ($1,$2,$3,$4)',
-        [order.id, item.item_id, item.quantity, item.unit_price]
+        'INSERT INTO order_items (order_id, item_id, custom_item_name, quantity, unit_price) VALUES ($1,$2,$3,$4,$5)',
+        [order.id, item.item_id || null, item.item_id ? null : (item.item_name || null), item.quantity, item.unit_price]
       );
     }
     await client.query('COMMIT');
@@ -60,6 +63,34 @@ router.post('/', async (req, res) => {
   } catch (err) {
     await client.query('ROLLBACK');
     res.status(500).json({ error: 'Server error' });
+  } finally {
+    client.release();
+  }
+});
+
+router.put('/:id', async (req, res) => {
+  const { customer_id, notes, items } = req.body;
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const total = (items || []).reduce((s, i) => s + i.quantity * i.unit_price, 0);
+    const { rows } = await client.query(
+      'UPDATE orders SET customer_id=$1, notes=$2, total_amount=$3, updated_at=NOW() WHERE id=$4 RETURNING *',
+      [customer_id || null, notes, total, req.params.id]
+    );
+    if (!rows[0]) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'Not found' }); }
+    await client.query('DELETE FROM order_items WHERE order_id=$1', [req.params.id]);
+    for (const item of (items || [])) {
+      await client.query(
+        'INSERT INTO order_items (order_id, item_id, custom_item_name, quantity, unit_price) VALUES ($1,$2,$3,$4,$5)',
+        [req.params.id, item.item_id || null, item.item_id ? null : (item.item_name || null), item.quantity, item.unit_price]
+      );
+    }
+    await client.query('COMMIT');
+    res.json(rows[0]);
+  } catch (err) {
+    await client.query('ROLLBACK');
+    res.status(500).json({ error: err.message });
   } finally {
     client.release();
   }
