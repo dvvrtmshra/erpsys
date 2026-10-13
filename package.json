@@ -1,6 +1,6 @@
 {
   "name": "erpsys",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
   "main": "main.js",
   "workspaces": [
@@ -13,6 +13,7 @@
     "dev:frontend": "npm run dev --workspace=frontend",
     "electron": "SET ELECTRON_RUN_AS_NODE=&& electron .",
     "dist": "electron-builder --win --x64",
+    "build:release": "npm run build --workspace=frontend && xcopy /E /Y /I frontend\\dist dist\\frontend\\dist && pkg backend/src/index.js --targets node18-win-x64 --output dist/backend.exe && npm run dist",
     "db:init": "node -e \"require('dotenv').config({path:'backend/.env'}); const {Pool}=require('pg'); const fs=require('fs'); const pool=new Pool({host:process.env.DB_HOST,port:process.env.DB_PORT,database:process.env.DB_NAME,user:'postgres',password:'294657'}); pool.query(fs.readFileSync('database/schema.sql','utf8')).then(()=>{console.log('Schema applied');pool.end()}).catch(e=>{console.error(e);pool.end()});\""
   },
   "build": {
@@ -21,14 +22,22 @@
     "directories": {
       "output": "installer"
     },
+    "publish": {
+      "provider": "github",
+      "owner": "dvvrtmshra",
+      "repo": "erpsys"
+    },
     "files": [
-      "main.js"
+      "main.js",
+      "node_modules/electron-updater/**/*"
     ],
     "extraResources": [
       {
         "from": "dist/",
         "to": ".",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       }
     ],
     "win": {
@@ -46,5 +55,8 @@
   "devDependencies": {
     "electron": "^28.3.3",
     "electron-builder": "^26.15.3"
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.9"
   }
 }

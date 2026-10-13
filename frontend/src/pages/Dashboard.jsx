@@ -15,6 +15,7 @@ export default function Dashboard() {
   const [stats, setStats] = useState(null);
   const [recentOrders, setRecentOrders] = useState([]);
   const [lowStockItems, setLowStockItems] = useState([]);
+  const [loadError, setLoadError] = useState(null);
 
   useEffect(() => {
     Promise.all([
@@ -38,8 +39,20 @@ export default function Dashboard() {
         openTenders: tenders.data.filter(t => t.status === 'open').length,
         inventoryItems: inventory.data.length,
       });
-    }).catch(() => {});
+    }).catch((err) => {
+      setLoadError(err?.response?.data?.error || err?.message || 'Failed to load dashboard');
+    });
   }, []);
+
+  if (loadError) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '60vh', gap: 12 }}>
+        <AlertTriangle size={32} color="#ef4444" />
+        <div style={{ fontSize: 14, color: '#ef4444', fontWeight: 600 }}>Dashboard failed to load</div>
+        <div style={{ fontSize: 12, color: '#94a3b8', maxWidth: 400, textAlign: 'center' }}>{loadError}</div>
+      </div>
+    );
+  }
 
   if (!stats) {
     return (

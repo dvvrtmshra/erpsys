@@ -58,6 +58,8 @@ CREATE TABLE IF NOT EXISTS orders (
   id SERIAL PRIMARY KEY,
   customer_id INTEGER REFERENCES customers(id),
   status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending','confirmed','shipped','delivered','cancelled')),
+  payment_status VARCHAR(20) DEFAULT 'unpaid' CHECK (payment_status IN ('unpaid','partial','paid')),
+  amount_paid DECIMAL(12,2) DEFAULT 0,
   total_amount DECIMAL(12,2) DEFAULT 0,
   notes TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -68,6 +70,7 @@ CREATE TABLE IF NOT EXISTS order_items (
   id SERIAL PRIMARY KEY,
   order_id INTEGER REFERENCES orders(id) ON DELETE CASCADE,
   item_id INTEGER REFERENCES catalog_items(id),
+  custom_item_name VARCHAR(200),
   quantity DECIMAL(12,2) NOT NULL,
   unit_price DECIMAL(12,2) NOT NULL
 );
@@ -76,6 +79,8 @@ CREATE TABLE IF NOT EXISTS purchases (
   id SERIAL PRIMARY KEY,
   supplier_id INTEGER REFERENCES suppliers(id),
   status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending','ordered','received','cancelled')),
+  payment_status VARCHAR(20) DEFAULT 'unpaid' CHECK (payment_status IN ('unpaid','partial','paid')),
+  amount_paid DECIMAL(12,2) DEFAULT 0,
   total_amount DECIMAL(12,2) DEFAULT 0,
   notes TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -86,6 +91,8 @@ CREATE TABLE IF NOT EXISTS purchase_items (
   id SERIAL PRIMARY KEY,
   purchase_id INTEGER REFERENCES purchases(id) ON DELETE CASCADE,
   item_id INTEGER REFERENCES catalog_items(id),
+  custom_item_name VARCHAR(200),
+  item_type VARCHAR(50),
   quantity DECIMAL(12,2) NOT NULL,
   unit_price DECIMAL(12,2) NOT NULL
 );

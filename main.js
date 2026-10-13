@@ -3,6 +3,7 @@ const { spawn, execFileSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const net = require('net');
+const { autoUpdater } = require('electron-updater');
 
 app.setName('ERP System');
 
@@ -22,7 +23,8 @@ const paths = () => {
     PG_DATA:     path.join(dataDir, 'pgdata'),
     pgCtl:       path.join(PG_BIN, 'pg_ctl.exe'),
     psql:        path.join(PG_BIN, 'psql.exe'),
-    SCHEMA_FILE: path.join(binDir, 'database', 'schema.sql'),
+    SCHEMA_FILE:  path.join(binDir, 'database', 'schema.sql'),
+    MIGRATE_FILE: path.join(binDir, 'database', 'migrate.sql'),
     BACKEND_EXE: path.join(binDir, 'backend.exe'),
   };
 };
@@ -154,6 +156,21 @@ function applySchema() {
   log('Schema applied.');
 }
 
+function runMigrations() {
+  const { psql, MIGRATE_FILE } = paths();
+  if (!fs.existsSync(MIGRATE_FILE)) { log('No migrate.sql found, skipping.'); return; }
+  log(`Running migrations from: ${MIGRATE_FILE}`);
+  try {
+    const result = execFileSync(psql, ['-U', 'postgres', '-p', String(PG_PORT), '-d', 'erp_db', '-f', MIGRATE_FILE],
+      { env: { ...process.env, PGPASSWORD: '' }, stdio: 'pipe' });
+    log(`Migrations complete: ${result ? result.toString().trim() : 'ok'}`);
+  } catch (e) {
+    const errText = e.stderr ? e.stderr.toString() : e.message;
+    log(`Migration error: ${errText}`);
+    throw new Error(`Migration failed: ${errText}`);
+  }
+}
+
 // ── Backend ───────────────────────────────────────────────────────────────────
 
 function startBackend() {
@@ -216,6 +233,40 @@ function createWindow() {
   mainWindow.on('closed', () => { mainWindow = null; });
 }
 
+// ── Auto-update ───────────────────────────────────────────────────────────────
+
+function checkForUpdates() {
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true;
+
+  autoUpdater.on('update-available', (info) => {
+    dialog.showMessageBox(mainWindow, {
+      type: 'info',
+      title: 'Update Available',
+      message: `Version ${info.version} is available. It will download in the background and install when you close the app.`,
+      buttons: ['OK'],
+    });
+  });
+
+  autoUpdater.on('update-downloaded', () => {
+    dialog.showMessageBox(mainWindow, {
+      type: 'info',
+      title: 'Update Ready',
+      message: 'Update downloaded. It will be installed when you restart the app.',
+      buttons: ['Restart Now', 'Later'],
+      defaultId: 0,
+    }).then(({ response }) => {
+      if (response === 0) autoUpdater.quitAndInstall();
+    });
+  });
+
+  autoUpdater.on('error', (err) => {
+    log(`Auto-update error: ${err.message}`);
+  });
+
+  autoUpdater.checkForUpdates().catch(err => log(`Update check failed: ${err.message}`));
+}
+
 // ── App lifecycle ─────────────────────────────────────────────────────────────
 
 app.whenReady().then(async () => {
@@ -235,6 +286,7 @@ app.whenReady().then(async () => {
       await startPostgres();
       await waitForPort(PG_PORT, 60000);
       applySchema();
+      runMigrations();
       startBackend();
       await waitForPort(BACKEND_PORT);
     } else {
@@ -245,6 +297,7 @@ app.whenReady().then(async () => {
       });
     }
     createWindow();
+    if (isPackaged) checkForUpdates();
   } catch (err) {
     log(`Startup error: ${err.message}`);
     dialog.showErrorBox('ERP System — Startup Failed', err.message);
