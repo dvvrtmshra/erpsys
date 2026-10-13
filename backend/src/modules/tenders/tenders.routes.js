@@ -1,6 +1,7 @@
 const express = require('express');
 const pool = require('../../db');
 const { requireAuth, requireRole } = require('../../middleware/auth');
+const { dbError } = require('../../utils/dbError');
 
 const router = express.Router();
 router.use(requireAuth);
@@ -16,14 +17,14 @@ router.get('/', async (req, res) => {
     `);
     res.json(rows);
   } catch (err) {
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: dbError(err) });
   }
 });
 
 router.get('/:id', async (req, res) => {
   try {
     const { rows } = await pool.query('SELECT * FROM tenders WHERE id = $1', [req.params.id]);
-    if (!rows[0]) return res.status(404).json({ error: 'Not found' });
+    if (!rows[0]) return res.status(404).json({ error: 'Tender not found.' });
     const { rows: suppliers } = await pool.query(`
       SELECT ts.id, ts.supplier_id, ts.material_notes, s.name AS supplier_name
       FROM tender_suppliers ts
@@ -32,22 +33,22 @@ router.get('/:id', async (req, res) => {
     `, [req.params.id]);
     const { rows: items } = await pool.query(`
       SELECT ti.id, ti.item_id, ti.quantity_needed, ti.notes,
-             c.name AS item_name, c.sku, c.unit,
+             c.name AS item_name, c.catalog_number, c.unit,
              COALESCE(inv.quantity, 0) AS stock_qty
       FROM tender_items ti
       JOIN catalog_items c ON c.id = ti.item_id
-      LEFT JOIN inventory inv ON inv.item_id = ti.item_id
+      LEFT JOIN inventory inv ON inv.catalog_item_id = ti.item_id
       WHERE ti.tender_id = $1
     `, [req.params.id]);
     res.json({ ...rows[0], suppliers, items });
   } catch (err) {
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: dbError(err) });
   }
 });
 
 router.post('/', requireRole('admin', 'manager'), async (req, res) => {
   const { title, description, tender_type, issued_by, deadline, budget } = req.body;
-  if (!title) return res.status(400).json({ error: 'Title required' });
+  if (!title) return res.status(400).json({ error: 'Tender title is required.' });
   try {
     const { rows } = await pool.query(
       `INSERT INTO tenders (title, description, tender_type, issued_by, deadline, budget)
@@ -56,12 +57,13 @@ router.post('/', requireRole('admin', 'manager'), async (req, res) => {
     );
     res.status(201).json(rows[0]);
   } catch (err) {
-    res.status(500).json({ error: 'Server error' });
+    res.status(400).json({ error: dbError(err) });
   }
 });
 
 router.put('/:id', requireRole('admin', 'manager'), async (req, res) => {
   const { title, description, tender_type, issued_by, awarded_to, status, deadline, budget, suppliers, items } = req.body;
+  if (!title) return res.status(400).json({ error: 'Tender title is required.' });
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -71,7 +73,7 @@ router.put('/:id', requireRole('admin', 'manager'), async (req, res) => {
       [title, description, tender_type, issued_by || null, awarded_to || null,
        status, deadline || null, budget || null, req.params.id]
     );
-    if (!rows[0]) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'Not found' }); }
+    if (!rows[0]) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'Tender not found.' }); }
 
     if (Array.isArray(suppliers)) {
       await client.query('DELETE FROM tender_suppliers WHERE tender_id = $1', [req.params.id]);
@@ -99,7 +101,7 @@ router.put('/:id', requireRole('admin', 'manager'), async (req, res) => {
     res.json(rows[0]);
   } catch (err) {
     await client.query('ROLLBACK');
-    res.status(500).json({ error: 'Server error' });
+    res.status(400).json({ error: dbError(err) });
   } finally {
     client.release();
   }
@@ -107,10 +109,11 @@ router.put('/:id', requireRole('admin', 'manager'), async (req, res) => {
 
 router.delete('/:id', requireRole('admin', 'manager'), async (req, res) => {
   try {
-    await pool.query('DELETE FROM tenders WHERE id = $1', [req.params.id]);
+    const { rowCount } = await pool.query('DELETE FROM tenders WHERE id = $1', [req.params.id]);
+    if (!rowCount) return res.status(404).json({ error: 'Tender not found.' });
     res.json({ message: 'Deleted' });
   } catch (err) {
-    res.status(500).json({ error: 'Server error' });
+    res.status(400).json({ error: dbError(err) });
   }
 });
 

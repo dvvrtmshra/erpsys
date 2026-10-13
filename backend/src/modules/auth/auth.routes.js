@@ -23,8 +23,8 @@ router.post('/login', async (req, res) => {
     req.session.username = user.username;
     res.json({ id: user.id, username: user.username, email: user.email, role: user.role });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Server error' });
+    const { dbError } = require('../../utils/dbError');
+    res.status(500).json({ error: dbError(err) });
   }
 });
 

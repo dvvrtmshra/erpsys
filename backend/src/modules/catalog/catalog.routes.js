@@ -4,6 +4,7 @@ const fs = require('fs');
 const pool = require('../../db');
 const { requireAuth, requireRole } = require('../../middleware/auth');
 const upload = require('../../middleware/upload');
+const { dbError } = require('../../utils/dbError');
 
 const router = express.Router();
 router.use(requireAuth);
@@ -17,24 +18,24 @@ router.get('/', async (req, res) => {
     const { rows } = await pool.query('SELECT * FROM catalog_items ORDER BY name');
     res.json(rows);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: dbError(err) });
   }
 });
 
 router.get('/:id', async (req, res) => {
   try {
     const { rows } = await pool.query('SELECT * FROM catalog_items WHERE id = $1', [req.params.id]);
-    if (!rows[0]) return res.status(404).json({ error: 'Item not found' });
+    if (!rows[0]) return res.status(404).json({ error: 'Catalog item not found.' });
     res.json(rows[0]);
   } catch (err) {
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: dbError(err) });
   }
 });
 
 router.post('/', requireRole('admin', 'manager'), upload.single('image'), async (req, res) => {
   const { catalog_number, name, category, description, unit_price, unit } = req.body;
-  if (!catalog_number || !name) return res.status(400).json({ error: 'Catalog number and name required' });
+  if (!catalog_number) return res.status(400).json({ error: 'Catalog number is required.' });
+  if (!name) return res.status(400).json({ error: 'Item name is required.' });
   const image_url = req.file ? `/uploads/${req.file.filename}` : null;
   try {
     const { rows } = await pool.query(
@@ -43,14 +44,14 @@ router.post('/', requireRole('admin', 'manager'), upload.single('image'), async 
     );
     res.status(201).json(rows[0]);
   } catch (err) {
-    console.error('[catalog POST]', err.message);
-    if (err.code === '23505') return res.status(409).json({ error: 'Catalog number already exists' });
-    res.status(500).json({ error: err.message });
+    res.status(400).json({ error: dbError(err) });
   }
 });
 
 router.put('/:id', requireRole('admin', 'manager'), upload.single('image'), async (req, res) => {
   const { catalog_number, name, category, description, unit_price, unit } = req.body;
+  if (!catalog_number) return res.status(400).json({ error: 'Catalog number is required.' });
+  if (!name) return res.status(400).json({ error: 'Item name is required.' });
   try {
     let image_url_clause = '';
     const params = [catalog_number, name, category || null, description, unit_price, unit, req.params.id];
@@ -63,20 +64,20 @@ router.put('/:id', requireRole('admin', 'manager'), upload.single('image'), asyn
       `UPDATE catalog_items SET catalog_number=$1, name=$2, category=$3, description=$4, unit_price=$5, unit=$6${image_url_clause} WHERE id=$${params.length} RETURNING *`,
       params
     );
-    if (!rows[0]) return res.status(404).json({ error: 'Item not found' });
+    if (!rows[0]) return res.status(404).json({ error: 'Catalog item not found.' });
     res.json(rows[0]);
   } catch (err) {
-    res.status(500).json({ error: 'Server error' });
+    res.status(400).json({ error: dbError(err) });
   }
 });
 
 router.delete('/:id', requireRole('admin', 'manager'), async (req, res) => {
   try {
-    await pool.query('DELETE FROM catalog_items WHERE id = $1', [req.params.id]);
+    const { rowCount } = await pool.query('DELETE FROM catalog_items WHERE id = $1', [req.params.id]);
+    if (!rowCount) return res.status(404).json({ error: 'Catalog item not found.' });
     res.json({ message: 'Deleted' });
   } catch (err) {
-    if (err.code === '23503') return res.status(409).json({ error: 'Cannot delete: this item is used in orders, purchases, or tenders.' });
-    res.status(500).json({ error: 'Server error' });
+    res.status(400).json({ error: dbError(err) });
   }
 });
 

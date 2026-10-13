@@ -1,11 +1,11 @@
 const express = require('express');
 const pool = require('../../db');
 const { requireAuth, requireRole } = require('../../middleware/auth');
+const { dbError } = require('../../utils/dbError');
 
 const router = express.Router();
 router.use(requireAuth);
 
-// GET all — join catalog for finished goods
 router.get('/', async (req, res) => {
   try {
     const { rows } = await pool.query(`
@@ -17,12 +17,10 @@ router.get('/', async (req, res) => {
     `);
     res.json(rows);
   } catch (err) {
-    console.error('[inventory GET]', err.message);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: dbError(err) });
   }
 });
 
-// GET catalog items not yet in finished-goods inventory (for the add dropdown)
 router.get('/available-catalog', async (req, res) => {
   try {
     const { rows } = await pool.query(`
@@ -36,13 +34,14 @@ router.get('/available-catalog', async (req, res) => {
     `);
     res.json(rows);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: dbError(err) });
   }
 });
 
 router.post('/', requireRole('admin', 'manager'), async (req, res) => {
   const { type, catalog_item_id, item_name, description, unit, quantity, location } = req.body;
-  if (!item_name) return res.status(400).json({ error: 'Item name required' });
+  if (!item_name) return res.status(400).json({ error: 'Item name is required.' });
+  if (quantity !== undefined && isNaN(parseInt(quantity))) return res.status(400).json({ error: 'Quantity must be a whole number.' });
   const validType = type === 'finished_good' ? 'finished_good' : 'raw_material';
   try {
     const { rows } = await pool.query(
@@ -52,48 +51,50 @@ router.post('/', requireRole('admin', 'manager'), async (req, res) => {
     );
     res.status(201).json(rows[0]);
   } catch (err) {
-    console.error('[inventory POST]', err.message);
-    res.status(500).json({ error: err.message });
+    res.status(400).json({ error: dbError(err) });
   }
 });
 
 router.put('/:id', requireRole('admin', 'manager'), async (req, res) => {
   const { item_name, description, unit, quantity, location } = req.body;
-  if (!item_name) return res.status(400).json({ error: 'Item name required' });
+  if (!item_name) return res.status(400).json({ error: 'Item name is required.' });
+  if (quantity !== undefined && isNaN(parseInt(quantity))) return res.status(400).json({ error: 'Quantity must be a whole number.' });
   try {
     const { rows } = await pool.query(
       `UPDATE inventory SET item_name=$1, description=$2, unit=$3, quantity=$4, location=$5, updated_at=NOW()
        WHERE id=$6 RETURNING *`,
       [item_name, description || null, unit || 'unit', quantity || 0, location || null, req.params.id]
     );
-    if (!rows[0]) return res.status(404).json({ error: 'Item not found' });
+    if (!rows[0]) return res.status(404).json({ error: 'Inventory item not found.' });
     res.json(rows[0]);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(400).json({ error: dbError(err) });
   }
 });
 
 router.patch('/:id/adjust', requireRole('admin', 'manager'), async (req, res) => {
   const { delta } = req.body;
+  if (delta === undefined || isNaN(parseInt(delta))) return res.status(400).json({ error: 'A numeric delta value is required.' });
   try {
     const { rows } = await pool.query(
       `UPDATE inventory SET quantity = GREATEST(0, quantity + $1), updated_at = NOW()
        WHERE id=$2 RETURNING *`,
-      [delta, req.params.id]
+      [parseInt(delta), req.params.id]
     );
-    if (!rows[0]) return res.status(404).json({ error: 'Item not found' });
+    if (!rows[0]) return res.status(404).json({ error: 'Inventory item not found.' });
     res.json(rows[0]);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(400).json({ error: dbError(err) });
   }
 });
 
 router.delete('/:id', requireRole('admin', 'manager'), async (req, res) => {
   try {
-    await pool.query('DELETE FROM inventory WHERE id = $1', [req.params.id]);
+    const { rowCount } = await pool.query('DELETE FROM inventory WHERE id = $1', [req.params.id]);
+    if (!rowCount) return res.status(404).json({ error: 'Inventory item not found.' });
     res.json({ message: 'Deleted' });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(400).json({ error: dbError(err) });
   }
 });
 
