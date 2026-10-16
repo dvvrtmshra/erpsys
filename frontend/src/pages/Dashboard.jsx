@@ -15,10 +15,10 @@ export default function Dashboard() {
   const [stats, setStats] = useState(null);
   const [recentOrders, setRecentOrders] = useState([]);
   const [lowStockItems, setLowStockItems] = useState([]);
-  const [loadError, setLoadError] = useState(null);
+  const [warnings, setWarnings] = useState([]);
 
   useEffect(() => {
-    Promise.all([
+    Promise.allSettled([
       api.get('/catalog'),
       api.get('/inventory'),
       api.get('/orders'),
@@ -26,33 +26,31 @@ export default function Dashboard() {
       api.get('/suppliers'),
       api.get('/tenders'),
     ]).then(([catalog, inventory, orders, purchases, suppliers, tenders]) => {
-      const low = inventory.data.filter(i => parseInt(i.quantity) < 10);
+      const ok = r => r.status === 'fulfilled';
+      const val = (r, fallback = []) => ok(r) ? r.value.data : fallback;
+      const errs = [catalog, inventory, orders, purchases, suppliers, tenders]
+        .filter(r => !ok(r))
+        .map(r => r.reason?.response?.data?.error || r.reason?.message);
+      if (errs.length) setWarnings(errs);
+
+      const invData = val(inventory);
+      const ordData = val(orders);
+      const purData = val(purchases);
+      const low = invData.filter(i => parseFloat(i.quantity) < 10);
       setLowStockItems(low.slice(0, 5));
-      setRecentOrders(orders.data.slice(0, 5));
+      setRecentOrders(ordData.slice(0, 5));
       setStats({
-        catalogCount: catalog.data.length,
+        catalogCount: val(catalog).length,
         lowStock: low.length,
-        pendingOrders: orders.data.filter(o => o.status === 'pending').length,
-        totalOrders: orders.data.length,
-        pendingPurchases: purchases.data.filter(p => p.status === 'pending').length,
-        supplierCount: suppliers.data.length,
-        openTenders: tenders.data.filter(t => t.status === 'open').length,
-        inventoryItems: inventory.data.length,
+        pendingOrders: ordData.filter(o => o.status === 'pending').length,
+        totalOrders: ordData.length,
+        pendingPurchases: purData.filter(p => p.status === 'pending').length,
+        supplierCount: val(suppliers).length,
+        openTenders: val(tenders).filter(t => t.status === 'open').length,
+        inventoryItems: invData.length,
       });
-    }).catch((err) => {
-      setLoadError(err?.response?.data?.error || err?.message || 'Failed to load dashboard');
     });
   }, []);
-
-  if (loadError) {
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '60vh', gap: 12 }}>
-        <AlertTriangle size={32} color="#ef4444" />
-        <div style={{ fontSize: 14, color: '#ef4444', fontWeight: 600 }}>Dashboard failed to load</div>
-        <div style={{ fontSize: 12, color: '#94a3b8', maxWidth: 400, textAlign: 'center' }}>{loadError}</div>
-      </div>
-    );
-  }
 
   if (!stats) {
     return (
@@ -79,6 +77,20 @@ export default function Dashboard() {
         <h2 style={{ fontSize: 22, fontWeight: 800, color: '#0f172a', letterSpacing: '-0.5px' }}>Dashboard</h2>
         <p style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>Welcome back — here's what's happening today.</p>
       </div>
+
+      {/* API error warnings (non-fatal) */}
+      {warnings.length > 0 && (
+        <div style={{
+          display: 'flex', alignItems: 'flex-start', gap: 10, background: '#fff1f2',
+          border: '1px solid #fecdd3', borderRadius: 10, padding: '12px 16px', marginBottom: 16,
+        }}>
+          <AlertTriangle size={16} color="#be123c" strokeWidth={2} style={{ flexShrink: 0, marginTop: 1 }} />
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: '#be123c', marginBottom: 2 }}>Some data could not be loaded</div>
+            {warnings.map((w, i) => <div key={i} style={{ fontSize: 11, color: '#9f1239' }}>{w}</div>)}
+          </div>
+        </div>
+      )}
 
       {/* Low stock alert */}
       {stats.lowStock > 0 && (

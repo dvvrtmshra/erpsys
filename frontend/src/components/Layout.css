@@ -100,7 +100,58 @@
   padding: 10px 10px;
   border-radius: 8px;
   background: rgba(255,255,255,0.04);
-  margin-bottom: 8px;
+  margin-bottom: 0;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.sidebar-user-card:hover {
+  background: rgba(255,255,255,0.08);
+}
+
+.sidebar-settings-icon {
+  color: #475569;
+  flex-shrink: 0;
+  transition: color 0.12s;
+}
+.sidebar-user-card:hover .sidebar-settings-icon {
+  color: #94a3b8;
+}
+
+.user-menu {
+  background: #1e293b;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px;
+  margin-top: 6px;
+  overflow: hidden;
+}
+
+.user-menu-item {
+  width: 100%;
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  padding: 9px 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+  text-align: left;
+}
+.user-menu-item:hover {
+  background: rgba(255,255,255,0.06);
+  color: #e2e8f0;
+}
+.user-menu-danger { color: #f87171; }
+.user-menu-danger:hover { background: rgba(239,68,68,0.12); color: #fca5a5; }
+
+.user-menu-divider {
+  height: 1px;
+  background: rgba(255,255,255,0.06);
+  margin: 2px 0;
 }
 
 .sidebar-avatar {
@@ -134,27 +185,6 @@
   margin-top: 1px;
 }
 
-.logout-btn {
-  width: 100%;
-  background: rgba(239,68,68,0.1);
-  color: #f87171;
-  border: 1px solid rgba(239,68,68,0.2);
-  border-radius: 7px;
-  padding: 7px 12px;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 600;
-  font-family: inherit;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  transition: background 0.12s, color 0.12s;
-}
-.logout-btn:hover {
-  background: rgba(239,68,68,0.18);
-  color: #fca5a5;
-}
 
 /* ── Main content ─────────────────────────────────────────────── */
 .main-content {

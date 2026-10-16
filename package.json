@@ -1,6 +1,6 @@
 {
   "name": "erpsys",
-  "version": "2.0.0",
+  "version": "2.0.3",
   "private": true,
   "main": "main.js",
   "workspaces": [
@@ -42,7 +42,8 @@
     ],
     "win": {
       "target": "nsis",
-      "icon": "assets/icon.ico"
+      "icon": "assets/icon.ico",
+      "artifactName": "ERP-System-Setup-${version}.${ext}"
     },
     "nsis": {
       "oneClick": false,

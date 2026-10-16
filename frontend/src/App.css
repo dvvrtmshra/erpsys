@@ -277,6 +277,16 @@ label textarea::placeholder { color: #94a3b8; font-weight: 400; }
   line-height: 1.5;
 }
 
+.success {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  color: #15803d;
+  font-size: 13px;
+  padding: 10px 14px;
+  margin: 8px 0;
+}
+
 .success-banner {
   display: flex;
   align-items: center;

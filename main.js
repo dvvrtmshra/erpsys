@@ -1,4 +1,4 @@
-const { app, BrowserWindow, dialog } = require('electron');
+const { app, BrowserWindow, dialog, Menu } = require('electron');
 const { spawn, execFileSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
@@ -31,6 +31,7 @@ const paths = () => {
 
 let mainWindow = null;
 let backendProcess = null;
+let isQuitting = false;
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -94,6 +95,9 @@ function initDb() {
 function startPostgres() {
   const { PG_DATA, pgCtl } = paths();
   return new Promise((resolve, reject) => {
+    // Kill any lingering postgres from a previous crash or fast-close
+    try { execFileSync(pgCtl, ['stop', '-D', PG_DATA, '-m', 'immediate'], { stdio: 'pipe' }); } catch (_) {}
+
     const schemaApplied = fs.existsSync(path.join(PG_DATA, '.schema_applied'));
     if (!fs.existsSync(path.join(PG_DATA, 'PG_VERSION')) || !schemaApplied) {
       // No pgdata OR previous init failed before schema was applied — start fresh
@@ -166,8 +170,7 @@ function runMigrations() {
     log(`Migrations complete: ${result ? result.toString().trim() : 'ok'}`);
   } catch (e) {
     const errText = e.stderr ? e.stderr.toString() : e.message;
-    log(`Migration error: ${errText}`);
-    throw new Error(`Migration failed: ${errText}`);
+    log(`Migration error (non-fatal): ${errText}`);
   }
 }
 
@@ -193,6 +196,8 @@ function startBackend() {
   const MAX_RESTARTS = 5;
 
   function spawnBackend() {
+    // Kill any process still holding port 3002 (e.g. from a previous instance during auto-update)
+    try { execFileSync('cmd', ['/c', `for /f "tokens=5" %a in ('netstat -aon ^| find ":3002 "') do taskkill /F /PID %a`], { stdio: 'pipe' }); } catch (_) {}
     backendProcess = spawn(BACKEND_EXE, [], { env, stdio: 'pipe' });
     backendProcess.stdout.on('data', d => log(`[backend] ${d.toString().trim()}`));
     backendProcess.stderr.on('data', d => log(`[backend:err] ${d.toString().trim()}`));
@@ -223,10 +228,14 @@ function stopBackend() {
 // ── Window ────────────────────────────────────────────────────────────────────
 
 function createWindow() {
+  // Remove the default File/Edit/View/Window/Help menu bar
+  Menu.setApplicationMenu(null);
+
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 800,
     title: 'ERP System',
+    autoHideMenuBar: true,
     webPreferences: { nodeIntegration: false, contextIsolation: true },
   });
   mainWindow.loadURL(`http://localhost:${BACKEND_PORT}`);
@@ -240,19 +249,30 @@ function checkForUpdates() {
   autoUpdater.autoInstallOnAppQuit = true;
 
   autoUpdater.on('update-available', (info) => {
+    log(`Update available: v${info.version}`);
     dialog.showMessageBox(mainWindow, {
       type: 'info',
       title: 'Update Available',
-      message: `Version ${info.version} is available. It will download in the background and install when you close the app.`,
+      message: `Version ${info.version} is available and will download in the background.\n\nYou will be notified when it is ready to install.`,
       buttons: ['OK'],
     });
   });
 
-  autoUpdater.on('update-downloaded', () => {
+  autoUpdater.on('download-progress', (progress) => {
+    const pct = Math.round(progress.percent);
+    if (mainWindow) mainWindow.setTitle(`ERP System — Downloading update ${pct}%…`);
+    log(`Update download: ${pct}%`);
+  });
+
+  autoUpdater.on('update-downloaded', (info) => {
+    if (mainWindow) mainWindow.setTitle('ERP System');
+    log(`Update downloaded: v${info.version}`);
+    // Write a flag so the next launch can show "just updated" message
+    fs.writeFileSync(path.join(dataDir, '.just_updated'), info.version);
     dialog.showMessageBox(mainWindow, {
       type: 'info',
-      title: 'Update Ready',
-      message: 'Update downloaded. It will be installed when you restart the app.',
+      title: 'Update Ready to Install',
+      message: `Version ${info.version} has been downloaded.\n\nClick "Restart Now" to install the update. Your data is safe.`,
       buttons: ['Restart Now', 'Later'],
       defaultId: 0,
     }).then(({ response }) => {
@@ -265,6 +285,20 @@ function checkForUpdates() {
   });
 
   autoUpdater.checkForUpdates().catch(err => log(`Update check failed: ${err.message}`));
+}
+
+function checkJustUpdated() {
+  const flagFile = path.join(dataDir, '.just_updated');
+  if (!fs.existsSync(flagFile)) return;
+  const version = fs.readFileSync(flagFile, 'utf8').trim();
+  fs.unlinkSync(flagFile);
+  dialog.showMessageBox(mainWindow, {
+    type: 'info',
+    title: 'Update Installed',
+    message: `ERP System has been updated to version ${version}.\n\nEverything is up to date and ready to use.`,
+    buttons: ['OK'],
+  });
+  log(`Showed post-update notice for v${version}`);
 }
 
 // ── App lifecycle ─────────────────────────────────────────────────────────────
@@ -297,7 +331,10 @@ app.whenReady().then(async () => {
       });
     }
     createWindow();
-    if (isPackaged) checkForUpdates();
+    if (isPackaged) {
+      checkJustUpdated();
+      checkForUpdates();
+    }
   } catch (err) {
     log(`Startup error: ${err.message}`);
     dialog.showErrorBox('ERP System — Startup Failed', err.message);
@@ -305,13 +342,18 @@ app.whenReady().then(async () => {
   }
 });
 
-app.on('window-all-closed', () => {
+function shutdown() {
+  if (isQuitting) return;
+  isQuitting = true;
   stopBackend();
   stopPostgres();
+}
+
+app.on('window-all-closed', () => {
+  shutdown();
   app.quit();
 });
 
 app.on('before-quit', () => {
-  stopBackend();
-  stopPostgres();
+  shutdown();
 });

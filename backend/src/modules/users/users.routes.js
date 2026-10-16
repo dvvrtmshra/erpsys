@@ -41,6 +41,10 @@ router.put('/:id', requireRole('admin'), async (req, res) => {
   if (!username) return res.status(400).json({ error: 'Username is required.' });
   if (!email) return res.status(400).json({ error: 'Email is required.' });
   if (password && password.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters.' });
+  // Prevent admin from demoting their own account
+  if (parseInt(req.params.id) === req.session.userId && role !== req.session.userRole) {
+    return res.status(400).json({ error: 'You cannot change your own role.' });
+  }
   try {
     let query, params;
     if (password) {

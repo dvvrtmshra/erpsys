@@ -17,6 +17,7 @@ router.get('/', async (req, res) => {
     `);
     res.json(rows);
   } catch (err) {
+    console.error('[inventory] GET / error:', err.code, err.message, 'column:', err.column);
     res.status(500).json({ error: dbError(err) });
   }
 });
