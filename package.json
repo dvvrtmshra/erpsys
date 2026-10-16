@@ -1,6 +1,6 @@
 {
   "name": "erpsys",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "private": true,
   "main": "main.js",
   "workspaces": [
@@ -47,7 +47,8 @@
     },
     "nsis": {
       "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "ERP System"

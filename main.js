@@ -196,8 +196,15 @@ function startBackend() {
   const MAX_RESTARTS = 5;
 
   function spawnBackend() {
-    // Kill any process still holding port 3002 (e.g. from a previous instance during auto-update)
-    try { execFileSync('cmd', ['/c', `for /f "tokens=5" %a in ('netstat -aon ^| find ":3002 "') do taskkill /F /PID %a`], { stdio: 'pipe' }); } catch (_) {}
+    // Kill any process still holding port 3002 (left over from a previous instance during auto-update)
+    try {
+      execFileSync('powershell', [
+        '-NonInteractive', '-Command',
+        `$p=(Get-NetTCPConnection -LocalPort 3002 -ErrorAction SilentlyContinue).OwningProcess; if($p){Stop-Process -Id $p -Force -ErrorAction SilentlyContinue}`
+      ], { stdio: 'pipe', timeout: 4000 });
+      // Brief pause so the OS fully releases the port before we bind it again
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 600);
+    } catch (_) {}
     backendProcess = spawn(BACKEND_EXE, [], { env, stdio: 'pipe' });
     backendProcess.stdout.on('data', d => log(`[backend] ${d.toString().trim()}`));
     backendProcess.stderr.on('data', d => log(`[backend:err] ${d.toString().trim()}`));
@@ -219,8 +226,10 @@ function startBackend() {
 
 function stopBackend() {
   if (backendProcess) {
-    backendProcess.kill();
+    try { backendProcess.kill('SIGKILL'); } catch (_) {}
     backendProcess = null;
+    // Give the OS ~800 ms to reclaim port 3002 before anything else starts
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 800);
     log('Backend stopped.');
   }
 }
@@ -276,7 +285,12 @@ function checkForUpdates() {
       buttons: ['Restart Now', 'Later'],
       defaultId: 0,
     }).then(({ response }) => {
-      if (response === 0) autoUpdater.quitAndInstall();
+      if (response === 0) {
+        // Stop the backend first so it releases port 3002 before the new instance starts
+        stopBackend();
+        isQuitting = true;
+        setTimeout(() => autoUpdater.quitAndInstall(), 1500);
+      }
     });
   });
 
