@@ -50,6 +50,24 @@ function waitForPort(port, timeout = 30000) {
   });
 }
 
+// Waits until PostgreSQL is actually ready to accept queries (not just TCP open)
+function waitForPostgres(timeout = 60000) {
+  const pgIsReady = path.join(binDir, 'postgres', 'bin', 'pg_isready.exe');
+  return new Promise((resolve, reject) => {
+    const start = Date.now();
+    const check = () => {
+      try {
+        execFileSync(pgIsReady, ['-h', 'localhost', '-p', String(PG_PORT), '-q'], { stdio: 'pipe' });
+        resolve();
+      } catch (_) {
+        if (Date.now() - start > timeout) return reject(new Error('PostgreSQL did not become ready in time'));
+        setTimeout(check, 500);
+      }
+    };
+    check();
+  });
+}
+
 function log(msg) {
   const logFile = path.join(dataDir, 'erp.log');
   fs.appendFileSync(logFile, `[${new Date().toISOString()}] ${msg}\n`);
@@ -332,7 +350,7 @@ app.whenReady().then(async () => {
     if (isPackaged) {
       // Packaged: start embedded postgres + backend.exe
       await startPostgres();
-      await waitForPort(PG_PORT, 60000);
+      await waitForPostgres();
       applySchema();
       runMigrations();
       startBackend();
