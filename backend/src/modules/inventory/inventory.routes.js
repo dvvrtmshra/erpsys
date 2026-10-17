@@ -75,12 +75,12 @@ router.put('/:id', requireRole('admin', 'manager'), async (req, res) => {
 
 router.patch('/:id/adjust', requireRole('admin', 'manager'), async (req, res) => {
   const { delta } = req.body;
-  if (delta === undefined || isNaN(parseInt(delta))) return res.status(400).json({ error: 'A numeric delta value is required.' });
+  if (delta === undefined || isNaN(parseFloat(delta))) return res.status(400).json({ error: 'A numeric delta value is required.' });
   try {
     const { rows } = await pool.query(
       `UPDATE inventory SET quantity = GREATEST(0, quantity + $1), updated_at = NOW()
        WHERE id=$2 RETURNING *`,
-      [parseInt(delta), req.params.id]
+      [parseFloat(delta), req.params.id]
     );
     if (!rows[0]) return res.status(404).json({ error: 'Inventory item not found.' });
     res.json(rows[0]);

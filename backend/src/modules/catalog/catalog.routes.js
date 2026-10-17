@@ -13,6 +13,15 @@ const uploadsDir = process.env.UPLOADS_DIR ||
   (process.pkg ? path.join(path.dirname(process.execPath), 'uploads') : path.join(__dirname, '../../../..', 'uploads'));
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
+function deleteImageFile(imageUrl) {
+  if (!imageUrl) return;
+  try {
+    const filename = path.basename(imageUrl);
+    const filePath = path.join(uploadsDir, filename);
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+  } catch (_) { /* best-effort */ }
+}
+
 router.get('/', async (req, res) => {
   try {
     const { rows } = await pool.query('SELECT * FROM catalog_items ORDER BY name');
@@ -53,8 +62,13 @@ router.put('/:id', requireRole('admin', 'manager'), upload.single('image'), asyn
   if (!catalog_number) return res.status(400).json({ error: 'Catalog number is required.' });
   if (!name) return res.status(400).json({ error: 'Item name is required.' });
   try {
+    // L-5: read old image_url before updating so we can clean up the file
+    const existing = await pool.query('SELECT image_url FROM catalog_items WHERE id = $1', [req.params.id]);
+    if (!existing.rows[0]) return res.status(404).json({ error: 'Catalog item not found.' });
+
     let image_url_clause = '';
-    const params = [catalog_number, name, category || null, description, unit_price, unit, req.params.id];
+    // L-4: default unit_price to 0 if not provided
+    const params = [catalog_number, name, category || null, description, unit_price !== undefined ? unit_price : 0, unit, req.params.id];
     if (req.file) {
       // Insert image_url at index 6 (becomes $7); id shifts to index 7 (becomes $8)
       params.splice(6, 0, `/uploads/${req.file.filename}`);
@@ -65,6 +79,10 @@ router.put('/:id', requireRole('admin', 'manager'), upload.single('image'), asyn
       params
     );
     if (!rows[0]) return res.status(404).json({ error: 'Catalog item not found.' });
+
+    // L-5: delete the old image file if a new one was uploaded
+    if (req.file) deleteImageFile(existing.rows[0].image_url);
+
     res.json(rows[0]);
   } catch (err) {
     res.status(400).json({ error: dbError(err) });
@@ -73,8 +91,11 @@ router.put('/:id', requireRole('admin', 'manager'), upload.single('image'), asyn
 
 router.delete('/:id', requireRole('admin', 'manager'), async (req, res) => {
   try {
+    // L-5: read image_url before deleting so we can clean up the file
+    const existing = await pool.query('SELECT image_url FROM catalog_items WHERE id = $1', [req.params.id]);
     const { rowCount } = await pool.query('DELETE FROM catalog_items WHERE id = $1', [req.params.id]);
     if (!rowCount) return res.status(404).json({ error: 'Catalog item not found.' });
+    if (existing.rows[0]) deleteImageFile(existing.rows[0].image_url);
     res.json({ message: 'Deleted' });
   } catch (err) {
     res.status(400).json({ error: dbError(err) });

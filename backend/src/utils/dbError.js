@@ -9,7 +9,7 @@ function dbError(err) {
     if (detail.includes('catalog_number')) return 'A catalog item with this catalog number already exists.';
     if (detail.includes('username')) return 'This username is already taken.';
     if (detail.includes('email')) return 'This email address is already registered.';
-    return `Duplicate value: ${detail || constraint}`;
+    return 'A record with this value already exists.';
   }
 
   if (code === '23503') {
@@ -21,7 +21,7 @@ function dbError(err) {
     if (detail.includes('supplier')) return 'Cannot delete: this supplier is referenced by existing records.';
     if (detail.includes('customer')) return 'Cannot delete: this customer is referenced by existing records.';
     if (detail.includes('catalog_item')) return 'Referenced catalog item does not exist.';
-    return `Reference error: ${detail || constraint}`;
+    return 'Cannot complete this action: a related record is referenced elsewhere.';
   }
 
   if (code === '23502') {
@@ -54,8 +54,7 @@ function dbError(err) {
     return 'Cannot connect to the database. Please check the server is running.';
   }
 
-  // Fall back to the raw pg message, which is still better than "Server error"
-  return err.message || 'An unexpected server error occurred.';
+  return 'An unexpected server error occurred.';
 }
 
 module.exports = { dbError };

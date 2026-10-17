@@ -46,9 +46,15 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+const VALID_TENDER_TYPES = ['public', 'private', 'government'];
+const VALID_TENDER_STATUSES = ['open', 'bidding', 'awarded', 'in_progress', 'completed', 'cancelled'];
+
 router.post('/', requireRole('admin', 'manager'), async (req, res) => {
   const { title, description, tender_type, issued_by, deadline, budget } = req.body;
   if (!title) return res.status(400).json({ error: 'Tender title is required.' });
+  if (tender_type && !VALID_TENDER_TYPES.includes(tender_type)) {
+    return res.status(400).json({ error: `tender_type must be one of: ${VALID_TENDER_TYPES.join(', ')}.` });
+  }
   try {
     const { rows } = await pool.query(
       `INSERT INTO tenders (title, description, tender_type, issued_by, deadline, budget)
@@ -64,6 +70,12 @@ router.post('/', requireRole('admin', 'manager'), async (req, res) => {
 router.put('/:id', requireRole('admin', 'manager'), async (req, res) => {
   const { title, description, tender_type, issued_by, awarded_to, status, deadline, budget, suppliers, items } = req.body;
   if (!title) return res.status(400).json({ error: 'Tender title is required.' });
+  if (tender_type && !VALID_TENDER_TYPES.includes(tender_type)) {
+    return res.status(400).json({ error: `tender_type must be one of: ${VALID_TENDER_TYPES.join(', ')}.` });
+  }
+  if (status && !VALID_TENDER_STATUSES.includes(status)) {
+    return res.status(400).json({ error: `status must be one of: ${VALID_TENDER_STATUSES.join(', ')}.` });
+  }
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -90,9 +102,12 @@ router.put('/:id', requireRole('admin', 'manager'), async (req, res) => {
       await client.query('DELETE FROM tender_items WHERE tender_id = $1', [req.params.id]);
       for (const item of items) {
         if (item.item_id) {
+          // L-6: reject negative quantity_needed
+          const qty = parseFloat(item.quantity_needed) || 0;
+          if (qty < 0) { await client.query('ROLLBACK'); return res.status(400).json({ error: 'quantity_needed cannot be negative.' }); }
           await client.query(
             'INSERT INTO tender_items (tender_id, item_id, quantity_needed, notes) VALUES ($1,$2,$3,$4)',
-            [req.params.id, item.item_id, item.quantity_needed || 0, item.notes || null]
+            [req.params.id, item.item_id, qty, item.notes || null]
           );
         }
       }

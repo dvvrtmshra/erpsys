@@ -111,27 +111,40 @@ router.patch('/:id/payment', requireRole('admin', 'manager'), async (req, res) =
   let { payment_status, amount_paid } = req.body;
   const valid = ['unpaid', 'paid', 'partial'];
   if (!valid.includes(payment_status)) return res.status(400).json({ error: `Invalid payment status. Must be one of: ${valid.join(', ')}.` });
+  // M-1: validate amount_paid is a finite number
+  if (amount_paid !== undefined) {
+    const parsed = parseFloat(amount_paid);
+    if (isNaN(parsed) || !isFinite(parsed)) {
+      return res.status(400).json({ error: 'amount_paid must be a finite number.' });
+    }
+  }
+  // M-8: wrap SELECT + UPDATE in a transaction to prevent TOCTOU race
+  const client = await pool.connect();
   try {
-    // Auto-derive status from amount_paid vs total when not explicit
+    await client.query('BEGIN');
     if (amount_paid !== undefined) {
-      const order = await pool.query('SELECT total_amount FROM orders WHERE id=$1', [req.params.id]);
+      const order = await client.query('SELECT total_amount FROM orders WHERE id=$1 FOR UPDATE', [req.params.id]);
       if (order.rows[0]) {
         const total = parseFloat(order.rows[0].total_amount);
         const paid  = parseFloat(amount_paid);
-        if (paid <= 0)        payment_status = 'unpaid';
+        if (paid <= 0)          payment_status = 'unpaid';
         else if (paid >= total) { payment_status = 'paid'; amount_paid = total; }
-        else                  payment_status = 'partial';
+        else                    payment_status = 'partial';
       }
     }
     const amtPaid = amount_paid !== undefined ? parseFloat(amount_paid) : null;
-    const { rows } = await pool.query(
+    const { rows } = await client.query(
       `UPDATE orders SET payment_status=$1, ${amtPaid !== null ? 'amount_paid=$2,' : ''} updated_at=NOW() WHERE id=$${amtPaid !== null ? 3 : 2} RETURNING *`,
       amtPaid !== null ? [payment_status, amtPaid, req.params.id] : [payment_status, req.params.id]
     );
+    await client.query('COMMIT');
     if (!rows[0]) return res.status(404).json({ error: 'Order not found.' });
     res.json(rows[0]);
   } catch (err) {
+    await client.query('ROLLBACK');
     res.status(400).json({ error: dbError(err) });
+  } finally {
+    client.release();
   }
 });
 
@@ -153,8 +166,13 @@ router.patch('/:id/status', requireRole('admin', 'manager'), async (req, res) =>
 
 router.delete('/:id', requireRole('admin', 'manager'), async (req, res) => {
   try {
-    const { rowCount } = await pool.query('DELETE FROM orders WHERE id = $1', [req.params.id]);
-    if (!rowCount) return res.status(404).json({ error: 'Order not found.' });
+    // M-5: block deletion of completed/delivered orders to preserve audit trail
+    const check = await pool.query('SELECT status FROM orders WHERE id = $1', [req.params.id]);
+    if (!check.rows[0]) return res.status(404).json({ error: 'Order not found.' });
+    if (check.rows[0].status === 'delivered') {
+      return res.status(400).json({ error: 'Delivered orders cannot be deleted. They are part of the financial audit trail.' });
+    }
+    await pool.query('DELETE FROM orders WHERE id = $1', [req.params.id]);
     res.json({ message: 'Deleted' });
   } catch (err) {
     res.status(400).json({ error: dbError(err) });

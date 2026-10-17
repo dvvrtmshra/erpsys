@@ -6,7 +6,7 @@ const { dbError } = require('../../utils/dbError');
 const router = express.Router();
 router.use(requireAuth);
 
-router.get('/', async (req, res) => {
+router.get('/', requireRole('admin', 'manager'), async (req, res) => {
   try {
     const { rows } = await pool.query(
       'SELECT * FROM accounting_entries ORDER BY entry_date DESC, created_at DESC'
