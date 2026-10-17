@@ -3,8 +3,8 @@ import api from '../api';
 import { useAuth } from '../context/AuthContext';
 import Modal from '../components/Modal';
 
-const emptyRaw = { type: 'raw_material', item_name: '', description: '', unit: 'unit', quantity: '', location: '' };
-const emptyFinished = { type: 'finished_good', catalog_item_id: '', item_name: '', description: '', unit: 'unit', quantity: '', location: '' };
+const emptyRaw = { type: 'raw_material', item_name: '', description: '', unit: 'unit', quantity: '', location: '', min_stock_level: 10 };
+const emptyFinished = { type: 'finished_good', catalog_item_id: '', item_name: '', description: '', unit: 'unit', quantity: '', location: '', min_stock_level: 10 };
 
 export default function Inventory() {
   const [items, setItems] = useState([]);
@@ -16,7 +16,8 @@ export default function Inventory() {
   const { user } = useAuth();
   const canEdit = user?.role === 'admin' || user?.role === 'manager';
 
-  const load = () => api.get('/inventory').then(r => setItems(r.data));
+  const [loading, setLoading] = useState(true);
+  const load = () => { setLoading(true); api.get('/inventory').then(r => setItems(r.data)).finally(() => setLoading(false)); };
   const loadCatalog = () => api.get('/inventory/available-catalog').then(r => setAvailableCatalog(r.data));
 
   useEffect(() => { load(); }, []);
@@ -88,7 +89,7 @@ export default function Inventory() {
     }
   };
 
-  const rowClass = qty => parseFloat(qty) < 10 ? 'row-warn' : '';
+  const rowClass = (qty, threshold) => parseFloat(qty) < parseFloat(threshold ?? 10) ? 'row-warn' : '';
 
   return (
     <div>
@@ -133,7 +134,7 @@ export default function Inventory() {
         {search && <button className="btn-sm" onClick={() => setSearch('')}>Clear</button>}
         <span style={{ fontSize: 13, color: '#888' }}>{filtered.length} of {activeList.length} items</span>
       </div>
-      <p style={{ color: '#888', fontSize: 13, marginBottom: 8 }}>Items with quantity below 10 are highlighted.</p>
+      <p style={{ color: '#888', fontSize: 13, marginBottom: 8 }}>Items below their low-stock level are highlighted in yellow.</p>
 
       {error && !form && <p className="error" style={{ marginBottom: 12 }}>{error}</p>}
 
@@ -173,10 +174,13 @@ export default function Inventory() {
               <input value={form.unit} onChange={e => setForm({ ...form, unit: e.target.value })} />
             </label>
             <label>Quantity
-              <input type="number" step="1" min="0" value={form.quantity} onChange={e => setForm({ ...form, quantity: e.target.value })} />
+              <input type="number" step="0.01" min="0" value={form.quantity} onChange={e => setForm({ ...form, quantity: e.target.value })} />
             </label>
             <label>Location
               <input value={form.location || ''} onChange={e => setForm({ ...form, location: e.target.value })} />
+            </label>
+            <label>Low-Stock Alert Level
+              <input type="number" step="0.01" min="0" value={form.min_stock_level ?? 10} onChange={e => setForm({ ...form, min_stock_level: e.target.value })} />
             </label>
 
             {error && <p className="error">{error}</p>}
@@ -200,12 +204,12 @@ export default function Inventory() {
           </thead>
           <tbody>
             {filtered.map(item => (
-              <tr key={item.id} className={rowClass(item.quantity)}>
+              <tr key={item.id} className={rowClass(item.quantity, item.min_stock_level)}>
                 <td>{item.catalog_number || '—'}</td>
                 <td>{item.item_name}</td>
                 <td>{item.category || '—'}</td>
                 <td>{item.unit}</td>
-                <td>{parseInt(item.quantity)}</td>
+                <td>{parseFloat(item.quantity)}</td>
                 <td>{item.location || '—'}</td>
                 <td>{item.updated_at ? new Date(item.updated_at).toLocaleDateString() : '—'}</td>
                 {canEdit && (
@@ -236,11 +240,11 @@ export default function Inventory() {
           </thead>
           <tbody>
             {filtered.map(item => (
-              <tr key={item.id} className={rowClass(item.quantity)}>
+              <tr key={item.id} className={rowClass(item.quantity, item.min_stock_level)}>
                 <td>{item.item_name}</td>
                 <td>{item.description || '—'}</td>
                 <td>{item.unit}</td>
-                <td>{parseInt(item.quantity)}</td>
+                <td>{parseFloat(item.quantity)}</td>
                 <td>{item.location || '—'}</td>
                 <td>{item.updated_at ? new Date(item.updated_at).toLocaleDateString() : '—'}</td>
                 {canEdit && (

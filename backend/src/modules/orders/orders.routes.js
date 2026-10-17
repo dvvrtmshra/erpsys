@@ -1,6 +1,6 @@
 const express = require('express');
 const pool = require('../../db');
-const { requireAuth } = require('../../middleware/auth');
+const { requireAuth, requireRole } = require('../../middleware/auth');
 const { dbError } = require('../../utils/dbError');
 
 const router = express.Router();
@@ -42,9 +42,13 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-router.post('/', async (req, res) => {
+router.post('/', requireRole('admin', 'manager'), async (req, res) => {
   const { customer_id, notes, items } = req.body;
   if (!items || !items.length) return res.status(400).json({ error: 'At least one item is required.' });
+  for (const item of items) {
+    if ((item.quantity || 0) <= 0) return res.status(400).json({ error: 'Item quantity must be greater than 0.' });
+    if ((item.unit_price || 0) < 0) return res.status(400).json({ error: 'Item price cannot be negative.' });
+  }
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -70,9 +74,13 @@ router.post('/', async (req, res) => {
   }
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', requireRole('admin', 'manager'), async (req, res) => {
   const { customer_id, notes, items } = req.body;
   if (!items || !items.length) return res.status(400).json({ error: 'At least one item is required.' });
+  for (const item of items) {
+    if ((item.quantity || 0) <= 0) return res.status(400).json({ error: 'Item quantity must be greater than 0.' });
+    if ((item.unit_price || 0) < 0) return res.status(400).json({ error: 'Item price cannot be negative.' });
+  }
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -99,7 +107,7 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-router.patch('/:id/payment', async (req, res) => {
+router.patch('/:id/payment', requireRole('admin', 'manager'), async (req, res) => {
   let { payment_status, amount_paid } = req.body;
   const valid = ['unpaid', 'paid', 'partial'];
   if (!valid.includes(payment_status)) return res.status(400).json({ error: `Invalid payment status. Must be one of: ${valid.join(', ')}.` });
@@ -127,7 +135,7 @@ router.patch('/:id/payment', async (req, res) => {
   }
 });
 
-router.patch('/:id/status', async (req, res) => {
+router.patch('/:id/status', requireRole('admin', 'manager'), async (req, res) => {
   const { status } = req.body;
   const valid = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'];
   if (!valid.includes(status)) return res.status(400).json({ error: `Invalid status. Must be one of: ${valid.join(', ')}.` });
@@ -143,7 +151,7 @@ router.patch('/:id/status', async (req, res) => {
   }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireRole('admin', 'manager'), async (req, res) => {
   try {
     const { rowCount } = await pool.query('DELETE FROM orders WHERE id = $1', [req.params.id]);
     if (!rowCount) return res.status(404).json({ error: 'Order not found.' });

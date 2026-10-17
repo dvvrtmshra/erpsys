@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -78,6 +78,14 @@ export default function Layout() {
   const initials = user?.username?.slice(0, 2).toUpperCase() || 'U';
   const [showPwModal, setShowPwModal] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef();
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handler = e => { if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [menuOpen]);
 
   return (
     <div className="layout">
@@ -112,7 +120,7 @@ export default function Layout() {
         </nav>
 
         {/* Footer */}
-        <div className="sidebar-footer">
+        <div className="sidebar-footer" ref={menuRef}>
           <div className="sidebar-user-card" onClick={() => setMenuOpen(o => !o)} title="Account options">
             <div className="sidebar-avatar">{initials}</div>
             <div className="sidebar-user-info">

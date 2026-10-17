@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import api from '../api';
 import { downloadPurchaseOrderPdf } from '../utils/purchaseOrderPdf';
+import Modal from '../components/Modal';
 
 const STATUS_COLORS = { pending: '#f39c12', ordered: '#2980b9', received: '#27ae60', cancelled: '#c0392b' };
 
@@ -18,6 +19,8 @@ export default function Purchases() {
   const [items, setItems] = useState([]);
   const [error, setError] = useState('');
   const [showPanel, setShowPanel] = useState(false);
+  const [pdfConfirm, setPdfConfirm] = useState(null); // { data, label } — replaces native confirm()
+  const [deleteConfirm, setDeleteConfirm] = useState(null); // id to delete
   const [panelTab, setPanelTab] = useState('catalog'); // 'catalog' | 'raw'
   const [panelSearch, setPanelSearch] = useState('');
   const panelRef = useRef();
@@ -78,7 +81,7 @@ export default function Purchases() {
       setPanelSearch('');
       setPanelTab('catalog');
     } catch {
-      alert('Could not load purchase order');
+      setError('Could not load purchase order');
     }
   };
 
@@ -162,9 +165,7 @@ export default function Purchases() {
       setForm(null);
       setEditId(null);
       load();
-      if (confirm(`PO-${String(poId).padStart(4,'0')} ${editId ? 'updated' : 'created'}!\n\nDownload PDF now?`)) {
-        downloadPurchaseOrderPdf(enriched);
-      }
+      setPdfConfirm({ data: enriched, label: `PO-${String(poId).padStart(4,'0')} ${editId ? 'updated' : 'created'} successfully.` });
     } catch (err) {
       setError(err.response?.data?.error || (editId ? 'Error updating purchase order' : 'Error creating purchase order'));
     }
@@ -172,13 +173,12 @@ export default function Purchases() {
 
   const updateStatus = async (id, status) => { await api.patch(`/purchases/${id}/status`, { status }); load(); };
   const del = async id => {
-    if (!confirm('Delete this purchase order?')) return;
-    try { await api.delete(`/purchases/${id}`); load(); }
-    catch (err) { alert(err.response?.data?.error || 'Delete failed'); }
+    try { await api.delete(`/purchases/${id}`); load(); setDeleteConfirm(null); }
+    catch (err) { setError(err.response?.data?.error || 'Delete failed'); setDeleteConfirm(null); }
   };
   const downloadPdf = async id => {
     try { downloadPurchaseOrderPdf((await api.get(`/purchases/${id}`)).data); }
-    catch { alert('Could not generate PDF'); }
+    catch { setError('Could not generate PDF'); }
   };
 
   // Panel filtering
@@ -457,6 +457,30 @@ export default function Purchases() {
   // ── List ─────────────────────────────────────────────────────
   return (
     <div>
+      {pdfConfirm && (
+        <Modal title="Purchase Order Saved" onClose={() => setPdfConfirm(null)}>
+          <p style={{ marginBottom: 16 }}>{pdfConfirm.label}</p>
+          <div className="modal-actions">
+            <button className="btn-primary" onClick={() => { downloadPurchaseOrderPdf(pdfConfirm.data); setPdfConfirm(null); }}>
+              Download PDF
+            </button>
+            <button onClick={() => setPdfConfirm(null)}>Skip</button>
+          </div>
+        </Modal>
+      )}
+
+      {deleteConfirm && (
+        <Modal title="Delete Purchase Order" onClose={() => setDeleteConfirm(null)}>
+          <p style={{ marginBottom: 16 }}>Are you sure you want to delete PO-{String(deleteConfirm).padStart(4, '0')}? This cannot be undone.</p>
+          <div className="modal-actions">
+            <button className="btn-primary" style={{ background: '#c0392b', borderColor: '#c0392b' }} onClick={() => del(deleteConfirm)}>
+              Delete
+            </button>
+            <button onClick={() => setDeleteConfirm(null)}>Cancel</button>
+          </div>
+        </Modal>
+      )}
+
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <h2>Purchases</h2>
         <button className="btn-primary" onClick={openNew}>+ New Purchase Order</button>
@@ -471,6 +495,8 @@ export default function Purchases() {
         {(search || statusFilter) && <button className="btn-sm" onClick={() => { setSearch(''); setStatusFilter(''); }}>Clear</button>}
         <span style={{ fontSize: 13, color: '#888' }}>{filtered.length} of {purchases.length}</span>
       </div>
+
+      {error && !form && <p className="error" style={{ marginBottom: 12 }}>{error}</p>}
 
       <table className="data-table">
         <thead>
@@ -490,7 +516,7 @@ export default function Purchases() {
                 </select>
                 <button className="btn-sm" onClick={() => openEdit(p.id)} style={{ marginRight: 4 }}>Edit</button>
                 <button className="btn-sm" onClick={() => downloadPdf(p.id)} style={{ marginRight: 4 }}>⬇ PO PDF</button>
-                <button className="btn-sm btn-danger" onClick={() => del(p.id)}>Delete</button>
+                <button className="btn-sm btn-danger" onClick={() => setDeleteConfirm(p.id)}>Delete</button>
               </td>
             </tr>
           ))}

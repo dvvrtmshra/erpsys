@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import api from '../api';
 import Modal from '../components/Modal';
@@ -26,8 +26,16 @@ export default function OrderForm() {
   const [pdfLoading, setPdfLoading] = useState(false);
   const [showCatalogPanel, setShowCatalogPanel] = useState(false);
   const [catalogSearch, setCatalogSearch] = useState('');
+  const [isDirty, setIsDirty] = useState(false);
   const panelRef = useRef();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!isDirty) return;
+    const handler = e => { e.preventDefault(); e.returnValue = ''; };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [isDirty]);
 
   useEffect(() => {
     loadCustomers();
@@ -106,10 +114,12 @@ export default function OrderForm() {
   };
 
   const addCustomItem = () => {
+    setIsDirty(true);
     setItems([...items, { type: 'custom', item_id: null, item_name: '', quantity: 1, unit_price: 0 }]);
   };
 
   const updateItem = (idx, field, val) => {
+    setIsDirty(true);
     const next = [...items];
     next[idx] = { ...next[idx], [field]: val };
     setItems(next);
@@ -139,6 +149,7 @@ export default function OrderForm() {
         : await api.post('/orders', payload);
       const full = await api.get(`/orders/${order.data.id}`);
       const cust = customers.find(c => String(c.id) === String(customerId));
+      setIsDirty(false);
       setCreatedOrder({
         ...full.data,
         customer_phone: cust?.phone,

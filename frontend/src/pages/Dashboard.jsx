@@ -36,7 +36,7 @@ export default function Dashboard() {
       const invData = val(inventory);
       const ordData = val(orders);
       const purData = val(purchases);
-      const low = invData.filter(i => parseFloat(i.quantity) < 10);
+      const low = invData.filter(i => parseFloat(i.quantity) < parseFloat(i.min_stock_level ?? 10));
       setLowStockItems(low.slice(0, 5));
       setRecentOrders(ordData.slice(0, 5));
       setStats({

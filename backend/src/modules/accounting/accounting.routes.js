@@ -1,6 +1,6 @@
 const express = require('express');
 const pool = require('../../db');
-const { requireAuth } = require('../../middleware/auth');
+const { requireAuth, requireRole } = require('../../middleware/auth');
 const { dbError } = require('../../utils/dbError');
 
 const router = express.Router();
@@ -19,7 +19,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.post('/', async (req, res) => {
+router.post('/', requireRole('admin', 'manager'), async (req, res) => {
   const { type, amount, description, reference, entry_date } = req.body;
   if (!type) return res.status(400).json({ error: 'Entry type (income/expense) is required.' });
   if (!amount || isNaN(parseFloat(amount))) return res.status(400).json({ error: 'A valid amount is required.' });
@@ -35,7 +35,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireRole('admin', 'manager'), async (req, res) => {
   try {
     const { rowCount } = await pool.query('DELETE FROM accounting_entries WHERE id = $1', [req.params.id]);
     if (!rowCount) return res.status(404).json({ error: 'Entry not found.' });

@@ -1,6 +1,6 @@
 const express = require('express');
 const pool = require('../../db');
-const { requireAuth } = require('../../middleware/auth');
+const { requireAuth, requireRole } = require('../../middleware/auth');
 const { dbError } = require('../../utils/dbError');
 
 const router = express.Router();
@@ -25,7 +25,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-router.post('/', async (req, res) => {
+router.post('/', requireRole('admin', 'manager'), async (req, res) => {
   const { name, contact_person, email, phone, address } = req.body;
   if (!name) return res.status(400).json({ error: 'Supplier name is required.' });
   try {
@@ -39,7 +39,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', requireRole('admin', 'manager'), async (req, res) => {
   const { name, contact_person, email, phone, address } = req.body;
   if (!name) return res.status(400).json({ error: 'Supplier name is required.' });
   try {
@@ -54,7 +54,7 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireRole('admin', 'manager'), async (req, res) => {
   try {
     const { rowCount } = await pool.query('DELETE FROM suppliers WHERE id = $1', [req.params.id]);
     if (!rowCount) return res.status(404).json({ error: 'Supplier not found.' });

@@ -56,9 +56,9 @@ router.put('/:id', requireRole('admin', 'manager'), upload.single('image'), asyn
     let image_url_clause = '';
     const params = [catalog_number, name, category || null, description, unit_price, unit, req.params.id];
     if (req.file) {
-      image_url_clause = ', image_url=$8';
+      // Insert image_url at index 6 (becomes $7); id shifts to index 7 (becomes $8)
       params.splice(6, 0, `/uploads/${req.file.filename}`);
-      params[params.length - 1] = req.params.id;
+      image_url_clause = ', image_url=$7';
     }
     const { rows } = await pool.query(
       `UPDATE catalog_items SET catalog_number=$1, name=$2, category=$3, description=$4, unit_price=$5, unit=$6${image_url_clause} WHERE id=$${params.length} RETURNING *`,

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../api';
 import { useAuth } from '../context/AuthContext';
@@ -21,6 +21,14 @@ export default function TenderForm() {
   const [suppliers, setSuppliers] = useState([]);
   const [items, setItems] = useState([]);
   const [error, setError] = useState('');
+  const [isDirty, setIsDirty] = useState(false);
+
+  useEffect(() => {
+    if (!isDirty) return;
+    const handler = e => { e.preventDefault(); e.returnValue = ''; };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [isDirty]);
 
   useEffect(() => {
     api.get('/suppliers').then(r => setAllSuppliers(r.data));
@@ -48,9 +56,9 @@ export default function TenderForm() {
   const removeSupplier = i => setSuppliers(suppliers.filter((_, idx) => idx !== i));
   const updateSupplier = (i, field, val) => setSuppliers(suppliers.map((s, idx) => idx === i ? { ...s, [field]: val } : s));
 
-  const addItem = () => setItems([...items, { item_id: '', quantity_needed: '', notes: '' }]);
-  const removeItem = i => setItems(items.filter((_, idx) => idx !== i));
-  const updateItem = (i, field, val) => {
+  const addItem = () => { setIsDirty(true); setItems([...items, { item_id: '', quantity_needed: '', notes: '' }]); };
+  const removeItem = i => { setIsDirty(true); setItems(items.filter((_, idx) => idx !== i)); };
+  const updateItem = (i, field, val) => { setIsDirty(true);
     const updated = items.map((it, idx) => idx === i ? { ...it, [field]: val } : it);
     if (field === 'item_id') {
       const inv = allInventory.find(x => String(x.item_id) === val);
@@ -75,6 +83,7 @@ export default function TenderForm() {
       } else {
         await api.post('/tenders', payload);
       }
+      setIsDirty(false);
       navigate('/tenders');
     } catch (err) {
       setError(err.response?.data?.error || 'Error');
@@ -156,8 +165,8 @@ export default function TenderForm() {
                 <select value={item.item_id} onChange={e => updateItem(i, 'item_id', e.target.value)} style={{ flex: 2 }}>
                   <option value="">— select inventory item —</option>
                   {allInventory.map(inv => (
-                    <option key={inv.item_id} value={inv.item_id}>
-                      {inv.item_name} ({inv.sku}) — stock: {parseInt(inv.quantity)} {inv.unit}
+                    <option key={inv.id} value={inv.id}>
+                      {inv.item_name} — stock: {parseFloat(inv.quantity)} {inv.unit}
                     </option>
                   ))}
                 </select>

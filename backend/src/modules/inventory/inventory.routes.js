@@ -40,15 +40,15 @@ router.get('/available-catalog', async (req, res) => {
 });
 
 router.post('/', requireRole('admin', 'manager'), async (req, res) => {
-  const { type, catalog_item_id, item_name, description, unit, quantity, location } = req.body;
+  const { type, catalog_item_id, item_name, description, unit, quantity, location, min_stock_level } = req.body;
   if (!item_name) return res.status(400).json({ error: 'Item name is required.' });
-  if (quantity !== undefined && isNaN(parseInt(quantity))) return res.status(400).json({ error: 'Quantity must be a whole number.' });
+  if (quantity !== undefined && isNaN(parseFloat(quantity))) return res.status(400).json({ error: 'Quantity must be a number.' });
   const validType = type === 'finished_good' ? 'finished_good' : 'raw_material';
   try {
     const { rows } = await pool.query(
-      `INSERT INTO inventory (type, catalog_item_id, item_name, description, unit, quantity, location, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, NOW()) RETURNING *`,
-      [validType, catalog_item_id || null, item_name, description || null, unit || 'unit', quantity || 0, location || null]
+      `INSERT INTO inventory (type, catalog_item_id, item_name, description, unit, quantity, location, min_stock_level, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW()) RETURNING *`,
+      [validType, catalog_item_id || null, item_name, description || null, unit || 'unit', quantity || 0, location || null, min_stock_level ?? 10]
     );
     res.status(201).json(rows[0]);
   } catch (err) {
@@ -57,14 +57,14 @@ router.post('/', requireRole('admin', 'manager'), async (req, res) => {
 });
 
 router.put('/:id', requireRole('admin', 'manager'), async (req, res) => {
-  const { item_name, description, unit, quantity, location } = req.body;
+  const { item_name, description, unit, quantity, location, min_stock_level } = req.body;
   if (!item_name) return res.status(400).json({ error: 'Item name is required.' });
-  if (quantity !== undefined && isNaN(parseInt(quantity))) return res.status(400).json({ error: 'Quantity must be a whole number.' });
+  if (quantity !== undefined && isNaN(parseFloat(quantity))) return res.status(400).json({ error: 'Quantity must be a number.' });
   try {
     const { rows } = await pool.query(
-      `UPDATE inventory SET item_name=$1, description=$2, unit=$3, quantity=$4, location=$5, updated_at=NOW()
-       WHERE id=$6 RETURNING *`,
-      [item_name, description || null, unit || 'unit', quantity || 0, location || null, req.params.id]
+      `UPDATE inventory SET item_name=$1, description=$2, unit=$3, quantity=$4, location=$5, min_stock_level=$6, updated_at=NOW()
+       WHERE id=$7 RETURNING *`,
+      [item_name, description || null, unit || 'unit', quantity || 0, location || null, min_stock_level ?? 10, req.params.id]
     );
     if (!rows[0]) return res.status(404).json({ error: 'Inventory item not found.' });
     res.json(rows[0]);
