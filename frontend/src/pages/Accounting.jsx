@@ -6,9 +6,9 @@ import Modal from '../components/Modal';
 const empty = { type: 'income', amount: '', description: '', reference: '', entry_date: '' };
 
 const PAY_STYLE = {
-  paid:    { bg: '#f0fdf4', color: '#15803d', border: '#bbf7d0' },
-  unpaid:  { bg: '#fff7ed', color: '#c2410c', border: '#fed7aa' },
-  partial: { bg: '#fefce8', color: '#a16207', border: '#fde68a' },
+  paid:    { bg: 'var(--success-bg)', color: 'var(--success)', border: 'var(--success-b)' },
+  unpaid:  { bg: 'var(--danger-bg)',  color: 'var(--danger)',  border: 'var(--danger-b)'  },
+  partial: { bg: 'var(--warn-bg)',    color: 'var(--warn)',    border: 'var(--warn-b)'    },
 };
 
 function fmt(n) {
@@ -51,24 +51,24 @@ function PaymentCell({ id, total, amountPaid, paymentStatus, onSave }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
         <PayBadge status={status} />
         {status === 'partial' && (
-          <span style={{ fontSize: 11, color: '#64748b' }}>
-            {fmt(paid)} paid · <span style={{ color: '#c2410c', fontWeight: 600 }}>{fmt(remaining)} left</span>
+          <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
+            {fmt(paid)} paid · <span style={{ color: 'var(--danger)', fontWeight: 600 }}>{fmt(remaining)} left</span>
           </span>
         )}
         {status === 'paid' && (
-          <span style={{ fontSize: 11, color: '#15803d', fontWeight: 500 }}>Fully collected</span>
+          <span style={{ fontSize: 11, color: 'var(--success)', fontWeight: 500 }}>Fully collected</span>
         )}
         {status === 'unpaid' && (
-          <span style={{ fontSize: 11, color: '#c2410c', fontWeight: 500 }}>{fmt(totalAmt)} due</span>
+          <span style={{ fontSize: 11, color: 'var(--danger)', fontWeight: 500 }}>{fmt(totalAmt)} due</span>
         )}
       </div>
 
       {/* Progress bar */}
       {status !== 'unpaid' && (
-        <div style={{ height: 4, background: '#f1f5f9', borderRadius: 99, marginBottom: 6, overflow: 'hidden' }}>
+        <div style={{ height: 4, background: 'var(--surface-3)', borderRadius: 99, marginBottom: 6, overflow: 'hidden' }}>
           <div style={{
             height: '100%', borderRadius: 99, width: `${pct}%`,
-            background: status === 'paid' ? '#10b981' : '#f59e0b',
+            background: status === 'paid' ? 'var(--success)' : 'var(--warn)',
             transition: 'width 0.4s ease',
           }} />
         </div>
@@ -76,13 +76,13 @@ function PaymentCell({ id, total, amountPaid, paymentStatus, onSave }) {
 
       {/* Amount input — always shown when open */}
       {open ? (
-        <div style={{ background: '#f8fafc', border: '1.5px solid #6366f1', borderRadius: 8, padding: '10px 12px', marginBottom: 4 }}>
-          <div style={{ fontSize: 11, fontWeight: 600, color: '#374151', marginBottom: 6 }}>
-            Enter amount paid <span style={{ color: '#94a3b8', fontWeight: 400 }}>(total: {fmt(totalAmt)})</span>
+        <div style={{ background: 'var(--surface-2)', border: '1.5px solid var(--accent)', borderRadius: 8, padding: '10px 12px', marginBottom: 4 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-2)', marginBottom: 6 }}>
+            Enter amount paid <span style={{ color: 'var(--text-3)', fontWeight: 400 }}>(total: {fmt(totalAmt)})</span>
           </div>
           <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
             <div style={{ position: 'relative', flex: 1 }}>
-              <span style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: '#64748b', pointerEvents: 'none', fontWeight: 600 }}>Rs.</span>
+              <span style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: 'var(--text-3)', pointerEvents: 'none', fontWeight: 600 }}>Rs.</span>
               <input
                 autoFocus
                 type="number" min="0" step="0.01" max={totalAmt}
@@ -90,26 +90,26 @@ function PaymentCell({ id, total, amountPaid, paymentStatus, onSave }) {
                 onChange={e => setInputAmt(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') setOpen(false); }}
                 placeholder="0.00"
-                style={{ width: '100%', padding: '6px 8px 6px 34px', border: '1.5px solid #c7d2fe', borderRadius: 6, fontSize: 13, fontFamily: 'inherit', background: '#fff', boxSizing: 'border-box' }}
+                style={{ width: '100%', padding: '6px 8px 6px 34px', borderRadius: 6, fontSize: 13, fontFamily: 'inherit', boxSizing: 'border-box' }}
               />
             </div>
-            <button onClick={save} style={{ ...qBtn('#6366f1','#fff','#6366f1'), padding: '6px 14px', fontSize: 12 }}>Save</button>
-            <button onClick={() => setOpen(false)} style={qBtn('#f1f5f9','#64748b','#e2e8f0')}>✕</button>
+            <button onClick={save} className="btn-primary" style={{ padding: '6px 14px', fontSize: 12 }}>Save</button>
+            <button onClick={() => setOpen(false)} className="btn-sm">✕</button>
           </div>
         </div>
       ) : (
         <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
           {status !== 'paid' && (
-            <button onClick={markFull} style={qBtn('#f0fdf4','#15803d','#bbf7d0')}>✓ Mark Paid</button>
+            <button onClick={markFull} style={qBtn('var(--success-bg)','var(--success)','var(--success-b)')}>✓ Mark Paid</button>
           )}
           <button
             onClick={() => { setInputAmt(paid > 0 ? String(paid) : ''); setOpen(true); }}
-            style={qBtn('#eef2ff','#4f46e5','#c7d2fe')}
+            style={qBtn('var(--accent-bg)','var(--accent)','rgba(35,131,226,0.3)')}
           >
             <CreditCard size={10} /> {status === 'partial' ? 'Edit Amount' : 'Enter Partial'}
           </button>
           {status !== 'unpaid' && (
-            <button onClick={markUnpaid} style={qBtn('#fff7ed','#c2410c','#fed7aa')}>Reset</button>
+            <button onClick={markUnpaid} style={qBtn('var(--warn-bg)','var(--warn)','var(--warn-b)')}>Reset</button>
           )}
         </div>
       )}
@@ -199,10 +199,10 @@ export default function Accounting() {
   });
 
   const tabStyle = active => ({
-    padding: '9px 20px', fontSize: 13, fontWeight: active ? 700 : 500, cursor: 'pointer',
+    padding: '9px 20px', fontSize: 13, fontWeight: active ? 600 : 400, cursor: 'pointer',
     background: 'none', border: 'none', fontFamily: 'inherit',
-    color: active ? '#6366f1' : '#64748b',
-    borderBottom: active ? '2px solid #6366f1' : '2px solid transparent',
+    color: active ? 'var(--text-1)' : 'var(--text-2)',
+    borderBottom: active ? '2px solid var(--accent)' : '2px solid transparent',
     transition: 'color 0.15s',
   });
 
@@ -214,7 +214,7 @@ export default function Accounting() {
       <div className="page-header">
         <div>
           <h2>Accounting</h2>
-          <p style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>Track receivables, payables, and journal entries.</p>
+          <p style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 4 }}>Track receivables, payables, and journal entries.</p>
         </div>
         <button className="btn-primary" onClick={() => { setForm({ ...empty }); setError(''); }}>
           <Plus size={14} /> Add Journal Entry
@@ -223,15 +223,15 @@ export default function Accounting() {
 
       {/* Summary cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(165px, 1fr))', gap: 14, marginBottom: 28 }}>
-        <SCard icon={TrendingUp}   color="#10b981" bg="#f0fdf4" label="Total Received"    value={fmt(totalReceived)} />
-        <SCard icon={Clock}        color="#f59e0b" bg="#fffbeb" label="Still Receivable"  value={fmt(totalReceivable)} />
-        <SCard icon={TrendingDown} color="#ef4444" bg="#fff1f2" label="Total Paid Out"    value={fmt(totalPaidOut)} />
-        <SCard icon={AlertCircle}  color="#8b5cf6" bg="#f5f3ff" label="Still Payable"     value={fmt(totalPayable)} />
-        <SCard icon={Wallet}       color={netBalance >= 0 ? '#6366f1' : '#ef4444'} bg={netBalance >= 0 ? '#eef2ff' : '#fff1f2'} label="Net Balance" value={fmt(netBalance)} large />
+        <SCard icon={TrendingUp}   color="var(--success)" bg="var(--success-bg)" label="Total Received"    value={fmt(totalReceived)} />
+        <SCard icon={Clock}        color="var(--warn)"    bg="var(--warn-bg)"    label="Still Receivable"  value={fmt(totalReceivable)} />
+        <SCard icon={TrendingDown} color="var(--danger)"  bg="var(--danger-bg)"  label="Total Paid Out"    value={fmt(totalPaidOut)} />
+        <SCard icon={AlertCircle}  color="#8b5cf6"        bg="rgba(139,92,246,0.12)" label="Still Payable" value={fmt(totalPayable)} />
+        <SCard icon={Wallet}       color={netBalance >= 0 ? 'var(--accent)' : 'var(--danger)'} bg={netBalance >= 0 ? 'var(--accent-bg)' : 'var(--danger-bg)'} label="Net Balance" value={fmt(netBalance)} large />
       </div>
 
       {/* Tabs */}
-      <div style={{ borderBottom: '1px solid #e2e8f0', marginBottom: 20, display: 'flex' }}>
+      <div style={{ borderBottom: '1px solid var(--border)', marginBottom: 20, display: 'flex' }}>
         <button style={tabStyle(tab === 'overview')}   onClick={() => { setTab('overview');   setSearch(''); setPayFilter(''); }}>Overview</button>
         <button style={tabStyle(tab === 'receivable')} onClick={() => { setTab('receivable'); setSearch(''); setPayFilter(''); }}>
           Sales / Receivable {unpaidOrderCount > 0 && <Pill n={unpaidOrderCount} />}
@@ -312,11 +312,11 @@ export default function Accounting() {
                   <td style={{ fontWeight: 600 }}>#{o.id}</td>
                   <td>{o.customer_name || 'Walk-in'}</td>
                   <td style={{ fontWeight: 600 }}>{fmt(total)}</td>
-                  <td style={{ color: '#15803d', fontWeight: 600 }}>{fmt(paid)}</td>
-                  <td style={{ color: remaining > 0 ? '#c2410c' : '#94a3b8', fontWeight: remaining > 0 ? 600 : 400 }}>
+                  <td style={{ color: 'var(--success)', fontWeight: 600 }}>{fmt(paid)}</td>
+                  <td style={{ color: remaining > 0 ? 'var(--danger)' : 'var(--text-3)', fontWeight: remaining > 0 ? 600 : 400 }}>
                     {remaining > 0 ? fmt(remaining) : '—'}
                   </td>
-                  <td style={{ color: '#64748b' }}>{new Date(o.created_at).toLocaleDateString()}</td>
+                  <td style={{ color: 'var(--text-3)' }}>{new Date(o.created_at).toLocaleDateString()}</td>
                   <td>
                     <PaymentCell id={o.id} total={total} amountPaid={paid}
                       paymentStatus={o.payment_status || 'unpaid'} onSave={saveOrderPayment} />
@@ -348,11 +348,11 @@ export default function Accounting() {
                   <td style={{ fontWeight: 600 }}>PO-{String(p.id).padStart(4,'0')}</td>
                   <td>{p.supplier_name || '—'}</td>
                   <td style={{ fontWeight: 600 }}>{fmt(total)}</td>
-                  <td style={{ color: '#15803d', fontWeight: 600 }}>{fmt(paid)}</td>
-                  <td style={{ color: remaining > 0 ? '#c2410c' : '#94a3b8', fontWeight: remaining > 0 ? 600 : 400 }}>
+                  <td style={{ color: 'var(--success)', fontWeight: 600 }}>{fmt(paid)}</td>
+                  <td style={{ color: remaining > 0 ? 'var(--danger)' : 'var(--text-3)', fontWeight: remaining > 0 ? 600 : 400 }}>
                     {remaining > 0 ? fmt(remaining) : '—'}
                   </td>
-                  <td style={{ color: '#64748b' }}>{new Date(p.created_at).toLocaleDateString()}</td>
+                  <td style={{ color: 'var(--text-3)' }}>{new Date(p.created_at).toLocaleDateString()}</td>
                   <td>
                     <PaymentCell id={p.id} total={total} amountPaid={paid}
                       paymentStatus={p.payment_status || 'unpaid'} onSave={savePurchasePayment} />
@@ -372,13 +372,13 @@ export default function Accounting() {
           <tbody>
             {filteredJournal.map(e => (
               <tr key={e.id}>
-                <td style={{ color: '#64748b' }}>{e.entry_date ? new Date(e.entry_date).toLocaleDateString() : '—'}</td>
-                <td><span className="badge" style={{ background: e.type === 'income' ? '#10b981' : '#ef4444' }}>{e.type}</span></td>
-                <td style={{ fontWeight: 600, color: e.type === 'income' ? '#15803d' : '#be123c' }}>
+                <td style={{ color: 'var(--text-3)' }}>{e.entry_date ? new Date(e.entry_date).toLocaleDateString() : '—'}</td>
+                <td><span className="badge" style={{ background: e.type === 'income' ? 'var(--success)' : 'var(--danger)' }}>{e.type}</span></td>
+                <td style={{ fontWeight: 600, color: e.type === 'income' ? 'var(--success)' : 'var(--danger)' }}>
                   {e.type === 'income' ? '+' : '−'} {fmt(e.amount)}
                 </td>
                 <td>{e.description || '—'}</td>
-                <td style={{ color: '#94a3b8' }}>{e.reference || '—'}</td>
+                <td style={{ color: 'var(--text-3)' }}>{e.reference || '—'}</td>
                 <td><button className="btn-sm btn-danger" onClick={() => delEntry(e.id)}><Trash2 size={11} /> Delete</button></td>
               </tr>
             ))}
@@ -414,30 +414,30 @@ export default function Accounting() {
 
 // ── Sub-components ─────────────────────────────────────────────
 function Pill({ n }) {
-  return <span style={{ marginLeft: 6, background: '#fde68a', color: '#92400e', borderRadius: 99, padding: '1px 6px', fontSize: 10, fontWeight: 700 }}>{n}</span>;
+  return <span style={{ marginLeft: 6, background: 'var(--warn-bg)', color: 'var(--warn)', borderRadius: 99, padding: '1px 6px', fontSize: 10, fontWeight: 700 }}>{n}</span>;
 }
 
 function SCard({ icon: Icon, color, bg, label, value, large }) {
   return (
-    <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: '16px 18px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
-      <div style={{ width: 34, height: 34, borderRadius: 9, background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 10 }}>
-        <Icon size={16} color={color} strokeWidth={2} />
+    <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: '16px 18px' }}>
+      <div style={{ width: 32, height: 32, borderRadius: 8, background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 10 }}>
+        <Icon size={15} color={color} strokeWidth={2} />
       </div>
-      <div style={{ fontSize: large ? 18 : 16, fontWeight: 800, color, letterSpacing: '-0.3px', lineHeight: 1 }}>{value}</div>
-      <div style={{ fontSize: 11, color: '#64748b', fontWeight: 500, marginTop: 5 }}>{label}</div>
+      <div style={{ fontSize: large ? 17 : 15, fontWeight: 700, color, letterSpacing: '-0.3px', lineHeight: 1 }}>{value}</div>
+      <div style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 500, marginTop: 5 }}>{label}</div>
     </div>
   );
 }
 
 function MiniPanel({ title, icon, onViewAll, empty, emptyText, children }) {
   return (
-    <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, overflow: 'hidden' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', borderBottom: '1px solid #f1f5f9' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontWeight: 700, fontSize: 13, color: '#0f172a' }}>{icon}{title}</div>
-        <button onClick={onViewAll} style={{ fontSize: 12, color: '#6366f1', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer' }}>View all →</button>
+    <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '13px 16px', borderBottom: '1px solid var(--border)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontWeight: 600, fontSize: 13, color: 'var(--text-1)' }}>{icon}{title}</div>
+        <button onClick={onViewAll} style={{ fontSize: 12, color: 'var(--accent)', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer' }}>View all →</button>
       </div>
       {empty
-        ? <div style={{ padding: '28px 18px', textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>✓ {emptyText}</div>
+        ? <div style={{ padding: '28px 16px', textAlign: 'center', color: 'var(--text-3)', fontSize: 13 }}>✓ {emptyText}</div>
         : <div>{children}</div>}
     </div>
   );
@@ -457,41 +457,39 @@ function MiniRow({ left, sub, right, badge, paid, total, onMarkPaid, onSaveParti
   };
 
   return (
-    <div style={{ padding: '10px 18px', borderBottom: '1px solid #f8fafc' }}>
+    <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--border-2)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: (pct > 0 || open) ? 6 : 0 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 13, fontWeight: 500, color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{left}</div>
-          <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 1 }}>{sub}</div>
+          <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{left}</div>
+          <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 1 }}>{sub}</div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
           {badge}
-          <span style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>{right}</span>
-          <button onClick={onMarkPaid} style={{ fontSize: 11, padding: '3px 9px', background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', borderRadius: 6, cursor: 'pointer', fontWeight: 600, fontFamily: 'inherit' }}>
-            ✓ Paid
-          </button>
-          <button onClick={() => { setInputAmt(paid > 0 ? String(paid) : ''); setOpen(v => !v); }} style={{ fontSize: 11, padding: '3px 9px', background: '#eef2ff', color: '#4f46e5', border: '1px solid #c7d2fe', borderRadius: 6, cursor: 'pointer', fontWeight: 600, fontFamily: 'inherit' }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)' }}>{right}</span>
+          <button onClick={onMarkPaid} style={qBtn('var(--success-bg)','var(--success)','var(--success-b)')}>✓ Paid</button>
+          <button onClick={() => { setInputAmt(paid > 0 ? String(paid) : ''); setOpen(v => !v); }} style={qBtn('var(--accent-bg)','var(--accent)','rgba(35,131,226,0.3)')}>
             Partial
           </button>
         </div>
       </div>
       {pct > 0 && !open && (
-        <div style={{ height: 3, background: '#f1f5f9', borderRadius: 99, overflow: 'hidden', marginBottom: 4 }}>
-          <div style={{ height: '100%', width: `${pct}%`, background: '#f59e0b', borderRadius: 99 }} />
+        <div style={{ height: 3, background: 'var(--surface-3)', borderRadius: 99, overflow: 'hidden', marginBottom: 4 }}>
+          <div style={{ height: '100%', width: `${pct}%`, background: 'var(--warn)', borderRadius: 99 }} />
         </div>
       )}
       {paid > 0 && paid < total && !open && (
-        <div style={{ fontSize: 11, color: '#64748b' }}>
-          {fmt(paid)} paid · <span style={{ color: '#c2410c', fontWeight: 600 }}>{fmt(total - paid)} remaining</span>
+        <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
+          {fmt(paid)} paid · <span style={{ color: 'var(--danger)', fontWeight: 600 }}>{fmt(total - paid)} remaining</span>
         </div>
       )}
       {open && (
-        <div style={{ background: '#f8fafc', border: '1.5px solid #6366f1', borderRadius: 8, padding: '8px 10px', marginTop: 2 }}>
-          <div style={{ fontSize: 11, color: '#374151', fontWeight: 600, marginBottom: 5 }}>
-            Amount paid <span style={{ color: '#94a3b8', fontWeight: 400 }}>/ {fmt(total)}</span>
+        <div style={{ background: 'var(--surface-2)', border: '1.5px solid var(--accent)', borderRadius: 8, padding: '8px 10px', marginTop: 2 }}>
+          <div style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 600, marginBottom: 5 }}>
+            Amount paid <span style={{ color: 'var(--text-3)', fontWeight: 400 }}>/ {fmt(total)}</span>
           </div>
           <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
             <div style={{ position: 'relative', flex: 1 }}>
-              <span style={{ position: 'absolute', left: 7, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: '#64748b', pointerEvents: 'none', fontWeight: 600 }}>Rs.</span>
+              <span style={{ position: 'absolute', left: 7, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: 'var(--text-3)', pointerEvents: 'none', fontWeight: 600 }}>Rs.</span>
               <input
                 autoFocus
                 type="number" min="0" step="0.01" max={total}
@@ -499,11 +497,11 @@ function MiniRow({ left, sub, right, badge, paid, total, onMarkPaid, onSaveParti
                 onChange={e => setInputAmt(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') setOpen(false); }}
                 placeholder="0.00"
-                style={{ width: '100%', padding: '5px 7px 5px 30px', border: '1px solid #c7d2fe', borderRadius: 6, fontSize: 12, fontFamily: 'inherit', background: '#fff', boxSizing: 'border-box' }}
+                style={{ width: '100%', padding: '5px 7px 5px 30px', borderRadius: 6, fontSize: 12, fontFamily: 'inherit', boxSizing: 'border-box' }}
               />
             </div>
-            <button onClick={save} style={{ fontSize: 11, padding: '5px 12px', background: '#6366f1', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 600, fontFamily: 'inherit' }}>Save</button>
-            <button onClick={() => setOpen(false)} style={{ fontSize: 11, padding: '5px 8px', background: '#f1f5f9', color: '#64748b', border: '1px solid #e2e8f0', borderRadius: 6, cursor: 'pointer', fontFamily: 'inherit' }}>✕</button>
+            <button onClick={save} className="btn-primary" style={{ fontSize: 11, padding: '5px 12px' }}>Save</button>
+            <button onClick={() => setOpen(false)} className="btn-sm">✕</button>
           </div>
         </div>
       )}

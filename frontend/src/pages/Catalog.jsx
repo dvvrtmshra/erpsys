@@ -108,7 +108,7 @@ export default function Catalog() {
         {(search || categoryFilter) && (
           <button className="btn-sm" onClick={() => { setSearch(''); setCategoryFilter(''); }}>Clear</button>
         )}
-        <span style={{ fontSize: 13, color: '#888' }}>{filtered.length} of {items.length} items</span>
+        <span style={{ fontSize: 13, color: 'var(--text-3)' }}>{filtered.length} of {items.length} items</span>
       </div>
 
       {error && !form && <p className="error" style={{ marginBottom: 12 }}>{error}</p>}
@@ -158,11 +158,11 @@ export default function Catalog() {
               <td>
                 {item.image_url
                   ? <img src={`http://localhost:3002${item.image_url}`} alt={item.name} style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 4 }} />
-                  : <span style={{ color: '#ccc', fontSize: 12 }}>No image</span>}
+                  : <span style={{ color: 'var(--text-3)', fontSize: 12 }}>No image</span>}
               </td>
               <td>{item.catalog_number}</td>
               <td>{item.name}</td>
-              <td>{item.category || <span style={{ color: '#aaa' }}>—</span>}</td>
+              <td>{item.category || <span style={{ color: 'var(--text-3)' }}>—</span>}</td>
               <td>{parseFloat(item.unit_price).toFixed(2)}</td>
               <td>{item.unit}</td>
               {canEdit && (

@@ -8,7 +8,7 @@ const empty = { username: '', email: '', password: '', role: 'viewer' };
 const ROLE_META = {
   admin:   { label: 'Admin',   color: '#7c3aed', bg: 'rgba(124,58,237,0.12)', desc: 'Full access — manage users, all data, settings' },
   manager: { label: 'Manager', color: '#0369a1', bg: 'rgba(3,105,161,0.12)',  desc: 'Create and edit orders, purchases, inventory, catalog' },
-  viewer:  { label: 'Viewer',  color: '#475569', bg: 'rgba(71,85,105,0.1)',   desc: 'Read-only access to all data' },
+  viewer:  { label: 'Viewer',  color: 'rgba(255,255,255,0.45)', bg: 'rgba(255,255,255,0.07)', desc: 'Read-only access to all data' },
 };
 
 function RoleBadge({ role }) {
@@ -80,7 +80,7 @@ export default function Users() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <div>
           <h2 style={{ margin: 0 }}>Users</h2>
-          <p style={{ margin: '4px 0 0', fontSize: 13, color: '#64748b' }}>Manage who can access this system and their permissions.</p>
+          <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--text-3)' }}>Manage who can access this system and their permissions.</p>
         </div>
         <button className="btn-primary" onClick={() => { setForm(empty); setError(''); }}>+ Add User</button>
       </div>
@@ -88,9 +88,9 @@ export default function Users() {
       {/* Role legend */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
         {Object.entries(ROLE_META).map(([key, m]) => (
-          <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '7px 12px', fontSize: 12 }}>
+          <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '7px 12px', fontSize: 12 }}>
             <RoleBadge role={key} />
-            <span style={{ color: '#64748b' }}>{m.desc}</span>
+            <span style={{ color: 'var(--text-3)' }}>{m.desc}</span>
           </div>
         ))}
       </div>
@@ -98,7 +98,7 @@ export default function Users() {
       <div className="search-row">
         <input className="search-input" placeholder="Search by username, email, role…" value={search} onChange={e => setSearch(e.target.value)} />
         {search && <button className="btn-sm" onClick={() => setSearch('')}>Clear</button>}
-        <span style={{ fontSize: 13, color: '#888' }}>{filtered.length} of {users.length}</span>
+        <span style={{ fontSize: 13, color: 'var(--text-3)' }}>{filtered.length} of {users.length}</span>
       </div>
 
       {error && !form && <p className="error" style={{ marginBottom: 12 }}>{error}</p>}
@@ -115,7 +115,7 @@ export default function Users() {
               {isSelf ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0' }}>
                   <RoleBadge role={form.role} />
-                  <span style={{ fontSize: 12, color: '#94a3b8' }}>You cannot change your own role.</span>
+                  <span style={{ fontSize: 12, color: 'var(--text-3)' }}>You cannot change your own role.</span>
                 </div>
               ) : (
                 <select value={form.role} onChange={e => setForm({ ...form, role: e.target.value })}>
@@ -149,7 +149,7 @@ export default function Users() {
             <tr key={u.id}>
               <td>
                 {u.username}
-                {u.id === me?.id && <span style={{ fontSize: 10, color: '#94a3b8', marginLeft: 6 }}>(you)</span>}
+                {u.id === me?.id && <span style={{ fontSize: 10, color: 'var(--text-3)', marginLeft: 6 }}>(you)</span>}
               </td>
               <td>{u.email}</td>
               <td><RoleBadge role={u.role} /></td>

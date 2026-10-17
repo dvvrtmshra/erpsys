@@ -205,12 +205,12 @@ export default function Purchases() {
   const stockBadge = (item) => {
     if (item.item_type === 'raw_material') {
       const qty = item.current_stock ?? null;
-      if (qty === null || qty === undefined) return <span style={badgeStyle('#888','#f6f8fa')}>no data</span>;
-      return <span style={badgeStyle(qty < 10 ? '#856404' : '#1e7e34', qty < 10 ? '#fff3cd' : '#d4edda')}>stock: {qty} {item.unit || ''}</span>;
+      if (qty === null || qty === undefined) return <span style={badgeStyle('var(--text-3)','var(--surface-3)')}>no data</span>;
+      return <span style={badgeStyle(qty < 10 ? 'var(--warn)' : 'var(--success)', qty < 10 ? 'var(--warn-bg)' : 'var(--success-bg)')}>stock: {qty} {item.unit || ''}</span>;
     }
     const inv = catalogInventoryMap[parseInt(item.item_id)];
-    if (!inv) return <span style={badgeStyle('#c0392b','#fde8e8')}>not in inventory</span>;
-    return <span style={badgeStyle(inv.qty < 10 ? '#856404' : '#1e7e34', inv.qty < 10 ? '#fff3cd' : '#d4edda')}>stock: {inv.qty} {inv.unit || ''}</span>;
+    if (!inv) return <span style={badgeStyle('var(--danger)','var(--danger-bg)')}>not in inventory</span>;
+    return <span style={badgeStyle(inv.qty < 10 ? 'var(--warn)' : 'var(--success)', inv.qty < 10 ? 'var(--warn-bg)' : 'var(--success-bg)')}>stock: {inv.qty} {inv.unit || ''}</span>;
   };
 
   const badgeStyle = (color, bg) => ({ fontSize: 10, color, background: bg, padding: '1px 6px', borderRadius: 99, whiteSpace: 'nowrap' });
@@ -240,8 +240,7 @@ export default function Purchases() {
         <form onSubmit={submit}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
             <label>Supplier
-              <select value={form.supplier_id} onChange={e => setForm({ ...form, supplier_id: e.target.value })}
-                style={{ marginTop: 4, padding: '8px 10px', border: '1px solid #d0d7de', borderRadius: 4, fontSize: 14, width: '100%' }}>
+              <select value={form.supplier_id} onChange={e => setForm({ ...form, supplier_id: e.target.value })}>
                 <option value="">— select supplier —</option>
                 {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
@@ -249,7 +248,7 @@ export default function Purchases() {
             <label>Notes
               <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })}
                 placeholder="Delivery instructions, special requirements…"
-                style={{ marginTop: 4, height: 60, fontSize: 13 }} />
+                style={{ height: 60 }} />
             </label>
           </div>
 
@@ -267,12 +266,12 @@ export default function Purchases() {
                 {showPanel && (
                   <div style={{
                     position: 'absolute', top: '110%', left: 0, zIndex: 200,
-                    background: '#fff', border: '1px solid #d0d7de', borderRadius: 8,
-                    boxShadow: '0 8px 24px rgba(0,0,0,0.13)', width: 420, maxHeight: 480,
+                    background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 8,
+                    boxShadow: '0 16px 40px rgba(0,0,0,0.45)', width: 420, maxHeight: 480,
                     display: 'flex', flexDirection: 'column',
                   }}>
                     {/* Tabs */}
-                    <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', padding: '0 8px' }}>
+                    <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', padding: '0 8px' }}>
                       <button type="button" style={tabStyle(panelTab === 'catalog')} onClick={() => setPanelTab('catalog')}>
                         Catalog Items
                       </button>
@@ -282,10 +281,10 @@ export default function Purchases() {
                     </div>
 
                     {/* Search */}
-                    <div style={{ padding: '8px 12px', borderBottom: '1px solid #f0f2f5' }}>
+                    <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--border)' }}>
                       <input autoFocus placeholder={panelTab === 'catalog' ? 'Search catalog…' : 'Search raw materials…'}
                         value={panelSearch} onChange={e => setPanelSearch(e.target.value)}
-                        style={{ width: '100%', padding: '6px 10px', border: '1px solid #d0d7de', borderRadius: 4, fontSize: 13, boxSizing: 'border-box' }} />
+                        style={{ width: '100%', padding: '6px 10px', border: '1px solid var(--border)', borderRadius: 5, fontSize: 13, boxSizing: 'border-box', background: 'var(--surface)', color: 'var(--text-1)' }} />
                     </div>
 
                     {/* Content */}
@@ -293,28 +292,28 @@ export default function Purchases() {
                       {panelTab === 'catalog' && (
                         <>
                           {Object.keys(catalogByCategory).length === 0 && (
-                            <div style={{ padding: '16px 12px', color: '#888', fontSize: 13 }}>No items found</div>
+                            <div style={{ padding: '16px 12px', color: 'var(--text-3)', fontSize: 13 }}>No items found</div>
                           )}
                           {Object.entries(catalogByCategory).map(([cat, catItems]) => (
                             <div key={cat}>
-                              <div style={{ padding: '5px 12px 2px', fontSize: 11, fontWeight: 700, color: '#555', textTransform: 'uppercase', letterSpacing: 0.4 }}>{cat}</div>
+                              <div style={{ padding: '5px 12px 2px', fontSize: 11, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: 0.4 }}>{cat}</div>
                               {catItems.map(c => {
                                 const checked = selectedCatalogIds.has(String(c.id));
                                 const inv = catalogInventoryMap[c.id];
                                 return (
-                                  <label key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 12px', cursor: 'pointer', background: checked ? '#f0fff4' : 'transparent' }}>
+                                  <label key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 12px', cursor: 'pointer', background: checked ? 'var(--active)' : 'transparent' }}>
                                     <input type="checkbox" checked={checked} onChange={() => toggleCatalogItem(c)} style={{ width: 15, height: 15, cursor: 'pointer', flexShrink: 0 }} />
                                     <div style={{ flex: 1, minWidth: 0 }}>
-                                      <div style={{ fontSize: 13, fontWeight: checked ? 600 : 400, color: '#1e2a3a' }}>{c.name}</div>
-                                      <div style={{ fontSize: 11, color: '#888' }}>
+                                      <div style={{ fontSize: 13, fontWeight: checked ? 600 : 400, color: 'var(--text-1)' }}>{c.name}</div>
+                                      <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
                                         {c.catalog_number && <span>{c.catalog_number} · </span>}
                                         Rs. {parseFloat(c.unit_price || 0).toLocaleString('en-IN')} / {c.unit || 'unit'}
                                       </div>
                                     </div>
                                     <div style={{ flexShrink: 0 }}>
                                       {!inv
-                                        ? <span style={badgeStyle('#888','#f6f8fa')}>no stock data</span>
-                                        : <span style={badgeStyle(inv.qty < 10 ? '#856404' : '#1e7e34', inv.qty < 10 ? '#fff3cd' : '#d4edda')}>stock: {inv.qty}</span>
+                                        ? <span style={badgeStyle('var(--text-3)','var(--surface-3)')}>no stock data</span>
+                                        : <span style={badgeStyle(inv.qty < 10 ? 'var(--warn)' : 'var(--success)', inv.qty < 10 ? 'var(--warn-bg)' : 'var(--success-bg)')}>stock: {inv.qty}</span>
                                       }
                                     </div>
                                   </label>
@@ -328,28 +327,28 @@ export default function Purchases() {
                       {panelTab === 'raw' && (
                         <>
                           {filteredRaw.length === 0 && panelSearch && (
-                            <div style={{ padding: '16px 12px', color: '#888', fontSize: 13 }}>No raw materials found</div>
+                            <div style={{ padding: '16px 12px', color: 'var(--text-3)', fontSize: 13 }}>No raw materials found</div>
                           )}
                           {filteredRaw.length === 0 && !panelSearch && (
-                            <div style={{ padding: '16px 12px', color: '#888', fontSize: 13 }}>No raw materials in inventory yet.<br />Use "+ Custom" to add one.</div>
+                            <div style={{ padding: '16px 12px', color: 'var(--text-3)', fontSize: 13 }}>No raw materials in inventory yet.<br />Use "+ Custom" to add one.</div>
                           )}
                           {filteredRaw.map(r => {
                             const checked = selectedRawIds.has(String(r.id));
                             const qty = parseInt(r.quantity);
                             return (
-                              <label key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 12px', cursor: 'pointer', background: checked ? '#f0fff4' : 'transparent' }}>
+                              <label key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 12px', cursor: 'pointer', background: checked ? 'var(--active)' : 'transparent' }}>
                                 <input type="checkbox" checked={checked} onChange={() => toggleRawItem(r)} style={{ width: 15, height: 15, cursor: 'pointer', flexShrink: 0 }} />
                                 <div style={{ flex: 1, minWidth: 0 }}>
-                                  <div style={{ fontSize: 13, fontWeight: checked ? 600 : 400, color: '#1e2a3a' }}>{r.item_name}</div>
-                                  <div style={{ fontSize: 11, color: '#888' }}>Unit: {r.unit || 'unit'}{r.location ? ` · ${r.location}` : ''}</div>
+                                  <div style={{ fontSize: 13, fontWeight: checked ? 600 : 400, color: 'var(--text-1)' }}>{r.item_name}</div>
+                                  <div style={{ fontSize: 11, color: 'var(--text-3)' }}>Unit: {r.unit || 'unit'}{r.location ? ` · ${r.location}` : ''}</div>
                                 </div>
                                 <div style={{ flexShrink: 0 }}>
-                                  <span style={badgeStyle(qty < 10 ? '#856404' : '#1e7e34', qty < 10 ? '#fff3cd' : '#d4edda')}>stock: {qty}</span>
+                                  <span style={badgeStyle(qty < 10 ? 'var(--warn)' : 'var(--success)', qty < 10 ? 'var(--warn-bg)' : 'var(--success-bg)')}>stock: {qty}</span>
                                 </div>
                               </label>
                             );
                           })}
-                          <div style={{ padding: '8px 12px', borderTop: '1px solid #f0f2f5', marginTop: 4 }}>
+                          <div style={{ padding: '8px 12px', borderTop: '1px solid var(--border)', marginTop: 4 }}>
                             <button type="button" className="btn-sm" onClick={addCustomRaw} style={{ width: '100%', textAlign: 'center' }}>
                               + Custom Raw Material (not in inventory)
                             </button>
@@ -358,8 +357,8 @@ export default function Purchases() {
                       )}
                     </div>
 
-                    <div style={{ padding: '8px 12px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: 12, color: '#888' }}>{items.length} item{items.length !== 1 ? 's' : ''} added</span>
+                    <div style={{ padding: '8px 12px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: 12, color: 'var(--text-3)' }}>{items.length} item{items.length !== 1 ? 's' : ''} added</span>
                       <button type="button" className="btn-sm" onClick={() => setShowPanel(false)}>Done</button>
                     </div>
                   </div>
@@ -368,43 +367,43 @@ export default function Purchases() {
             </div>
 
             {items.length === 0 ? (
-              <div style={{ background: '#f8f9fc', border: '1px dashed #d0d7de', borderRadius: 6, padding: '28px 16px', textAlign: 'center', color: '#888', fontSize: 13 }}>
-                No items yet. Click <strong>+ Add Items</strong> to select catalog items or raw materials.
+              <div style={{ background: 'var(--surface)', border: '1px dashed var(--border)', borderRadius: 6, padding: '28px 16px', textAlign: 'center', color: 'var(--text-3)', fontSize: 13 }}>
+                No items yet. Click <strong style={{ color: 'var(--text-2)' }}>+ Add Items</strong> to select catalog items or raw materials.
               </div>
             ) : (
-              <div style={{ border: '1px solid #e2e8f0', borderRadius: 6, overflow: 'hidden' }}>
+              <div style={{ border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                   <thead>
-                    <tr style={{ background: '#f6f8fa', borderBottom: '1px solid #e2e8f0' }}>
-                      <th style={{ padding: '8px 10px', textAlign: 'left', fontWeight: 600, color: '#555' }}>Item</th>
-                      <th style={{ padding: '8px 10px', textAlign: 'left', fontWeight: 600, color: '#555' }}>Type</th>
-                      <th style={{ padding: '8px 10px', textAlign: 'left', fontWeight: 600, color: '#555' }}>Current Stock</th>
-                      <th style={{ padding: '8px 10px', width: 90, textAlign: 'right', fontWeight: 600, color: '#555' }}>Qty to Order</th>
-                      <th style={{ padding: '8px 10px', width: 110, textAlign: 'right', fontWeight: 600, color: '#555' }}>Unit Price</th>
-                      <th style={{ padding: '8px 10px', width: 90, textAlign: 'right', fontWeight: 600, color: '#555' }}>Amount</th>
+                    <tr style={{ background: 'var(--surface-2)', borderBottom: '1px solid var(--border)' }}>
+                      <th style={{ padding: '8px 10px', textAlign: 'left', fontWeight: 500, color: 'var(--text-2)' }}>Item</th>
+                      <th style={{ padding: '8px 10px', textAlign: 'left', fontWeight: 500, color: 'var(--text-2)' }}>Type</th>
+                      <th style={{ padding: '8px 10px', textAlign: 'left', fontWeight: 500, color: 'var(--text-2)' }}>Current Stock</th>
+                      <th style={{ padding: '8px 10px', width: 90, textAlign: 'right', fontWeight: 500, color: 'var(--text-2)' }}>Qty to Order</th>
+                      <th style={{ padding: '8px 10px', width: 110, textAlign: 'right', fontWeight: 500, color: 'var(--text-2)' }}>Unit Price</th>
+                      <th style={{ padding: '8px 10px', width: 90, textAlign: 'right', fontWeight: 500, color: 'var(--text-2)' }}>Amount</th>
                       <th style={{ width: 36 }}></th>
                     </tr>
                   </thead>
                   <tbody>
                     {items.map((item, idx) => (
-                      <tr key={item._key} style={{ borderBottom: idx < items.length - 1 ? '1px solid #f0f2f5' : 'none', background: idx % 2 === 0 ? '#fff' : '#fafbfc' }}>
+                      <tr key={item._key} style={{ borderBottom: idx < items.length - 1 ? '1px solid var(--border-2)' : 'none', background: 'transparent' }}>
                         <td style={{ padding: '8px 10px' }}>
                           {item.item_type === 'raw_material' && !item.inventory_id ? (
                             <input value={item.item_name} onChange={e => updateItem(idx, 'item_name', e.target.value)}
                               placeholder="Raw material name"
-                              style={{ width: '100%', padding: '5px 7px', border: '1px solid #d0d7de', borderRadius: 4, fontSize: 13, boxSizing: 'border-box' }} />
+                              style={{ width: '100%', padding: '5px 7px', borderRadius: 4, fontSize: 13, boxSizing: 'border-box' }} />
                           ) : (
                             <div>
-                              <div style={{ fontWeight: 500, color: '#1e2a3a' }}>{item.item_name}</div>
-                              {item.catalog_number && <div style={{ fontSize: 11, color: '#888' }}>{item.catalog_number}{item.category ? ` · ${item.category}` : ''}</div>}
+                              <div style={{ fontWeight: 500, color: 'var(--text-1)' }}>{item.item_name}</div>
+                              {item.catalog_number && <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{item.catalog_number}{item.category ? ` · ${item.category}` : ''}</div>}
                             </div>
                           )}
                         </td>
                         <td style={{ padding: '8px 10px' }}>
                           <span style={{
                             fontSize: 11, padding: '2px 7px', borderRadius: 99,
-                            background: item.item_type === 'catalog' ? '#e8f0fe' : '#fef3e2',
-                            color: item.item_type === 'catalog' ? '#1a56db' : '#b45309',
+                            background: item.item_type === 'catalog' ? 'var(--accent-bg)' : 'var(--warn-bg)',
+                            color: item.item_type === 'catalog' ? 'var(--accent)' : 'var(--warn)',
                           }}>
                             {item.item_type === 'catalog' ? 'Catalog' : 'Raw Material'}
                           </span>
@@ -413,27 +412,27 @@ export default function Purchases() {
                         <td style={{ padding: '8px 10px' }}>
                           <input type="number" step="1" min="1" value={item.quantity}
                             onChange={e => updateItem(idx, 'quantity', e.target.value)}
-                            style={{ width: '100%', padding: '5px 7px', border: '1px solid #d0d7de', borderRadius: 4, fontSize: 13, textAlign: 'right', boxSizing: 'border-box' }} />
+                            style={{ width: '100%', padding: '5px 7px', borderRadius: 4, fontSize: 13, textAlign: 'right', boxSizing: 'border-box' }} />
                         </td>
                         <td style={{ padding: '8px 10px' }}>
                           <input type="number" step="0.01" min="0" value={item.unit_price}
                             onChange={e => updateItem(idx, 'unit_price', e.target.value)}
-                            style={{ width: '100%', padding: '5px 7px', border: '1px solid #d0d7de', borderRadius: 4, fontSize: 13, textAlign: 'right', boxSizing: 'border-box' }} />
+                            style={{ width: '100%', padding: '5px 7px', borderRadius: 4, fontSize: 13, textAlign: 'right', boxSizing: 'border-box' }} />
                         </td>
-                        <td style={{ padding: '8px 10px', fontWeight: 600, textAlign: 'right', color: '#1e2a3a', whiteSpace: 'nowrap' }}>
+                        <td style={{ padding: '8px 10px', fontWeight: 600, textAlign: 'right', color: 'var(--text-1)', whiteSpace: 'nowrap' }}>
                           {((parseInt(item.quantity) || 0) * (parseFloat(item.unit_price) || 0)).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
                         </td>
                         <td style={{ padding: '4px 6px', textAlign: 'center' }}>
                           <button type="button" onClick={() => removeItem(idx)}
-                            style={{ padding: '3px 7px', border: '1px solid #f5b7b1', borderRadius: 4, background: '#fde8e8', color: '#c0392b', cursor: 'pointer', fontSize: 12 }}>✕</button>
+                            style={{ padding: '3px 7px', border: '1px solid var(--danger-b)', borderRadius: 4, background: 'var(--danger-bg)', color: 'var(--danger)', cursor: 'pointer', fontSize: 12 }}>✕</button>
                         </td>
                       </tr>
                     ))}
                   </tbody>
                   <tfoot>
-                    <tr style={{ borderTop: '2px solid #e2e8f0', background: '#f6f8fa' }}>
-                      <td colSpan={5} style={{ padding: '10px 10px', fontWeight: 700, textAlign: 'right', fontSize: 14 }}>Grand Total</td>
-                      <td style={{ padding: '10px 10px', fontWeight: 700, fontSize: 15, color: '#1e2a3a', textAlign: 'right' }}>
+                    <tr style={{ borderTop: '1px solid var(--border)', background: 'var(--surface-2)' }}>
+                      <td colSpan={5} style={{ padding: '10px 10px', fontWeight: 600, textAlign: 'right', fontSize: 14, color: 'var(--text-2)' }}>Grand Total</td>
+                      <td style={{ padding: '10px 10px', fontWeight: 700, fontSize: 15, color: 'var(--text-1)', textAlign: 'right' }}>
                         Rs. {total.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
                       </td>
                       <td></td>
@@ -473,7 +472,7 @@ export default function Purchases() {
         <Modal title="Delete Purchase Order" onClose={() => setDeleteConfirm(null)}>
           <p style={{ marginBottom: 16 }}>Are you sure you want to delete PO-{String(deleteConfirm).padStart(4, '0')}? This cannot be undone.</p>
           <div className="modal-actions">
-            <button className="btn-primary" style={{ background: '#c0392b', borderColor: '#c0392b' }} onClick={() => del(deleteConfirm)}>
+            <button className="btn-primary" style={{ background: 'var(--danger)', borderColor: 'var(--danger)' }} onClick={() => del(deleteConfirm)}>
               Delete
             </button>
             <button onClick={() => setDeleteConfirm(null)}>Cancel</button>
@@ -493,7 +492,7 @@ export default function Purchases() {
           {['pending','ordered','received','cancelled'].map(s => <option key={s} value={s}>{s}</option>)}
         </select>
         {(search || statusFilter) && <button className="btn-sm" onClick={() => { setSearch(''); setStatusFilter(''); }}>Clear</button>}
-        <span style={{ fontSize: 13, color: '#888' }}>{filtered.length} of {purchases.length}</span>
+        <span style={{ fontSize: 13, color: 'var(--text-3)' }}>{filtered.length} of {purchases.length}</span>
       </div>
 
       {error && !form && <p className="error" style={{ marginBottom: 12 }}>{error}</p>}
@@ -511,7 +510,7 @@ export default function Purchases() {
               <td>Rs. {parseFloat(p.total_amount).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
               <td>{new Date(p.created_at).toLocaleDateString()}</td>
               <td>
-                <select value={p.status} onChange={e => updateStatus(p.id, e.target.value)} style={{ fontSize: 12, marginRight: 6 }}>
+                <select value={p.status} onChange={e => updateStatus(p.id, e.target.value)} className="filter-select" style={{ fontSize: 12, padding: '4px 8px', marginRight: 6 }}>
                   {['pending','ordered','received','cancelled'].map(s => <option key={s}>{s}</option>)}
                 </select>
                 <button className="btn-sm" onClick={() => openEdit(p.id)} style={{ marginRight: 4 }}>Edit</button>

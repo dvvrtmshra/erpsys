@@ -171,12 +171,12 @@ export default function OrderForm() {
     if (!itemId) return null;
     const qty = inventoryMap[parseInt(itemId)];
     if (qty === undefined) return (
-      <span style={{ fontSize: 11, color: '#c0392b', background: '#fde8e8', padding: '2px 6px', borderRadius: 99, whiteSpace: 'nowrap' }}>
+      <span style={{ fontSize: 11, color: 'var(--danger)', background: 'var(--danger-bg)', padding: '2px 6px', borderRadius: 99, whiteSpace: 'nowrap' }}>
         Not in inventory
       </span>
     );
     return (
-      <span style={{ fontSize: 11, color: qty < 10 ? '#856404' : '#27ae60', background: qty < 10 ? '#fff3cd' : '#e8f8ee', padding: '2px 6px', borderRadius: 99, whiteSpace: 'nowrap' }}>
+      <span style={{ fontSize: 11, color: qty < 10 ? 'var(--warn)' : 'var(--success)', background: qty < 10 ? 'var(--warn-bg)' : 'var(--success-bg)', padding: '2px 6px', borderRadius: 99, whiteSpace: 'nowrap' }}>
         Stock: {parseFloat(qty).toFixed(0)}{qty < 10 ? ' ⚠' : ''}
       </span>
     );
@@ -201,11 +201,11 @@ export default function OrderForm() {
   if (createdOrder) {
     return (
       <div style={{ maxWidth: 600 }}>
-        <div style={{ background: '#e8f8ee', border: '1px solid #27ae60', borderRadius: 8, padding: '20px 24px', marginBottom: 24 }}>
-          <div style={{ fontSize: 18, fontWeight: 700, color: '#27ae60', marginBottom: 4 }}>
+        <div style={{ background: 'var(--success-bg)', border: '1px solid var(--success-b)', borderRadius: 8, padding: '20px 24px', marginBottom: 24 }}>
+          <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--success)', marginBottom: 4 }}>
             ✓ Order #{createdOrder.id} {isEdit ? 'updated' : 'created'} successfully
           </div>
-          <div style={{ color: '#555', fontSize: 14 }}>
+          <div style={{ color: 'var(--text-2)', fontSize: 14 }}>
             Customer: <strong>{createdOrder.customer_name || 'Walk-in'}</strong> &nbsp;|&nbsp;
             Total: <strong>Rs. {parseFloat(createdOrder.total_amount).toFixed(2)}</strong>
           </div>
@@ -231,10 +231,10 @@ export default function OrderForm() {
         </div>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
           <button className="btn-primary" onClick={handleDownloadPdf} disabled={pdfLoading}
-            style={{ background: '#27ae60', display: 'flex', alignItems: 'center', gap: 8 }}>
+            style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             {pdfLoading ? 'Generating…' : '⬇ Download Quotation PDF'}
           </button>
-          <Link to="/orders" style={{ color: '#0969da', fontSize: 14 }}>← Back to Orders</Link>
+          <Link to="/orders" style={{ color: 'var(--accent)', fontSize: 14 }}>← Back to Orders</Link>
           <button className="btn-sm" onClick={() => { setCreatedOrder(null); setItems([]); setCustomerId(''); setNotes(''); }}>
             + New Order
           </button>
@@ -243,7 +243,7 @@ export default function OrderForm() {
     );
   }
 
-  if (loading) return <div style={{ padding: 32, color: '#888' }}>Loading order…</div>;
+  if (loading) return <div className="loading">Loading order…</div>;
 
   return (
     <div style={{ maxWidth: 820 }}>
@@ -272,7 +272,7 @@ export default function OrderForm() {
           <label style={{ marginBottom: 0 }}>Customer
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 4 }}>
               <select value={customerId} onChange={e => setCustomerId(e.target.value)}
-                style={{ flex: 1, padding: '8px 10px', border: '1px solid #d0d7de', borderRadius: 4, fontSize: 14 }}>
+                style={{ flex: 1 }} className="filter-select">
                 <option value="">— select or create —</option>
                 {customers.map(c => <option key={c.id} value={c.id}>{c.name}{c.phone ? ` (${c.phone})` : ''}</option>)}
               </select>
@@ -300,26 +300,26 @@ export default function OrderForm() {
               {showCatalogPanel && (
                 <div style={{
                   position: 'absolute', top: '110%', left: 0, zIndex: 200,
-                  background: '#fff', border: '1px solid #d0d7de', borderRadius: 8,
-                  boxShadow: '0 8px 24px rgba(0,0,0,0.12)', width: 380, maxHeight: 440,
+                  background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 8,
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.5)', width: 380, maxHeight: 440,
                   display: 'flex', flexDirection: 'column',
                 }}>
-                  <div style={{ padding: '10px 12px', borderBottom: '1px solid #e2e8f0' }}>
+                  <div style={{ padding: '10px 12px', borderBottom: '1px solid var(--border)' }}>
                     <input
                       autoFocus
                       placeholder="Search catalog…"
                       value={catalogSearch}
                       onChange={e => setCatalogSearch(e.target.value)}
-                      style={{ width: '100%', padding: '6px 10px', border: '1px solid #d0d7de', borderRadius: 4, fontSize: 13, boxSizing: 'border-box' }}
+                      style={{ width: '100%', padding: '6px 10px', border: '1px solid var(--border)', borderRadius: 4, fontSize: 13, boxSizing: 'border-box', background: 'var(--surface-3)', color: 'var(--text-1)' }}
                     />
                   </div>
                   <div style={{ overflowY: 'auto', flex: 1, padding: '6px 0' }}>
                     {Object.keys(catalogByCategory).length === 0 && (
-                      <div style={{ padding: '16px 12px', color: '#888', fontSize: 13 }}>No items found</div>
+                      <div style={{ padding: '16px 12px', color: 'var(--text-3)', fontSize: 13 }}>No items found</div>
                     )}
                     {Object.entries(catalogByCategory).map(([cat, catItems]) => (
                       <div key={cat}>
-                        <div style={{ padding: '5px 12px 3px', fontSize: 11, fontWeight: 700, color: '#666', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                        <div style={{ padding: '5px 12px 3px', fontSize: 11, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: 0.5 }}>
                           {cat}
                         </div>
                         {catItems.map(c => {
@@ -328,16 +328,16 @@ export default function OrderForm() {
                           return (
                             <label key={c.id} style={{
                               display: 'flex', alignItems: 'center', gap: 10, padding: '7px 12px',
-                              cursor: 'pointer', background: checked ? '#f0f7ff' : 'transparent',
+                              cursor: 'pointer', background: checked ? 'var(--active)' : 'transparent',
                             }}
-                              onMouseEnter={e => { if (!checked) e.currentTarget.style.background = '#f6f8fa'; }}
-                              onMouseLeave={e => { e.currentTarget.style.background = checked ? '#f0f7ff' : 'transparent'; }}
+                              onMouseEnter={e => { if (!checked) e.currentTarget.style.background = 'var(--hover)'; }}
+                              onMouseLeave={e => { e.currentTarget.style.background = checked ? 'var(--active)' : 'transparent'; }}
                             >
                               <input type="checkbox" checked={checked} onChange={() => toggleCatalogItem(c)}
                                 style={{ width: 16, height: 16, cursor: 'pointer', flexShrink: 0 }} />
                               <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ fontSize: 13, fontWeight: checked ? 600 : 400, color: '#1e2a3a' }}>{c.name}</div>
-                                <div style={{ fontSize: 11, color: '#888' }}>
+                                <div style={{ fontSize: 13, fontWeight: checked ? 600 : 400, color: 'var(--text-1)' }}>{c.name}</div>
+                                <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
                                   {c.catalog_number && <span>{c.catalog_number} · </span>}
                                   Rs. {parseFloat(c.unit_price || 0).toLocaleString('en-IN')}
                                   {c.unit && <span> / {c.unit}</span>}
@@ -345,8 +345,8 @@ export default function OrderForm() {
                               </div>
                               <div style={{ flexShrink: 0 }}>
                                 {qty === undefined
-                                  ? <span style={{ fontSize: 10, color: '#c0392b', background: '#fde8e8', padding: '1px 5px', borderRadius: 99 }}>no stock</span>
-                                  : <span style={{ fontSize: 10, color: qty < 10 ? '#856404' : '#27ae60', background: qty < 10 ? '#fff3cd' : '#e8f8ee', padding: '1px 5px', borderRadius: 99 }}>{qty} units</span>
+                                  ? <span style={{ fontSize: 10, color: 'var(--danger)', background: 'var(--danger-bg)', padding: '1px 5px', borderRadius: 99 }}>no stock</span>
+                                  : <span style={{ fontSize: 10, color: qty < 10 ? 'var(--warn)' : 'var(--success)', background: qty < 10 ? 'var(--warn-bg)' : 'var(--success-bg)', padding: '1px 5px', borderRadius: 99 }}>{qty} units</span>
                                 }
                               </div>
                             </label>
@@ -355,8 +355,8 @@ export default function OrderForm() {
                       </div>
                     ))}
                   </div>
-                  <div style={{ padding: '8px 12px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: 12, color: '#888' }}>{selectedCatalogIds.size} selected</span>
+                  <div style={{ padding: '8px 12px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: 12, color: 'var(--text-3)' }}>{selectedCatalogIds.size} selected</span>
                     <button type="button" className="btn-sm" onClick={() => setShowCatalogPanel(false)}>Done</button>
                   </div>
                 </div>
@@ -370,29 +370,29 @@ export default function OrderForm() {
 
           {/* Items table */}
           {items.length === 0 ? (
-            <div style={{ background: '#f8f9fc', border: '1px dashed #d0d7de', borderRadius: 6, padding: '28px 16px', textAlign: 'center', color: '#888', fontSize: 13 }}>
-              No items added yet. Click <strong>+ Add from Catalog</strong> to pick items, or <strong>+ Custom Item</strong> for unlisted items.
+            <div style={{ background: 'var(--surface)', border: '1px dashed var(--border)', borderRadius: 6, padding: '28px 16px', textAlign: 'center', color: 'var(--text-3)', fontSize: 13 }}>
+              No items added yet. Click <strong style={{ color: 'var(--text-2)' }}>+ Add from Catalog</strong> to pick items, or <strong style={{ color: 'var(--text-2)' }}>+ Custom Item</strong> for unlisted items.
             </div>
           ) : (
-            <div style={{ border: '1px solid #e2e8f0', borderRadius: 6, overflow: 'hidden' }}>
+            <div style={{ border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                 <thead>
-                  <tr style={{ background: '#f6f8fa', borderBottom: '1px solid #e2e8f0' }}>
-                    <th style={{ padding: '8px 10px', textAlign: 'left', fontWeight: 600, color: '#555' }}>Item</th>
-                    <th style={{ padding: '8px 10px', width: 80, textAlign: 'right', fontWeight: 600, color: '#555' }}>Qty</th>
-                    <th style={{ padding: '8px 10px', width: 110, textAlign: 'right', fontWeight: 600, color: '#555' }}>Unit Price</th>
-                    <th style={{ padding: '8px 10px', width: 90, textAlign: 'right', fontWeight: 600, color: '#555' }}>Amount</th>
+                  <tr style={{ background: 'var(--surface-2)', borderBottom: '1px solid var(--border)' }}>
+                    <th style={{ padding: '8px 10px', textAlign: 'left', fontWeight: 500, color: 'var(--text-2)' }}>Item</th>
+                    <th style={{ padding: '8px 10px', width: 80, textAlign: 'right', fontWeight: 500, color: 'var(--text-2)' }}>Qty</th>
+                    <th style={{ padding: '8px 10px', width: 110, textAlign: 'right', fontWeight: 500, color: 'var(--text-2)' }}>Unit Price</th>
+                    <th style={{ padding: '8px 10px', width: 90, textAlign: 'right', fontWeight: 500, color: 'var(--text-2)' }}>Amount</th>
                     <th style={{ width: 36 }}></th>
                   </tr>
                 </thead>
                 <tbody>
                   {items.map((item, idx) => (
-                    <tr key={idx} style={{ borderBottom: idx < items.length - 1 ? '1px solid #f0f2f5' : 'none', background: idx % 2 === 0 ? '#fff' : '#fafbfc' }}>
+                    <tr key={idx} style={{ borderBottom: idx < items.length - 1 ? '1px solid var(--border-2)' : 'none', background: 'transparent' }}>
                       <td style={{ padding: '8px 10px' }}>
                         {item.type === 'catalog' ? (
                           <div>
-                            <div style={{ fontWeight: 500, color: '#1e2a3a' }}>{item.item_name}</div>
-                            <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>
+                            <div style={{ fontWeight: 500, color: 'var(--text-1)' }}>{item.item_name}</div>
+                            <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>
                               {item.catalog_number && <span>{item.catalog_number}</span>}
                               {item.category && <span style={{ marginLeft: 6 }}>{item.category}</span>}
                               <span style={{ marginLeft: 8 }}>{stockBadge(item.item_id)}</span>
@@ -403,7 +403,7 @@ export default function OrderForm() {
                             value={item.item_name}
                             onChange={e => updateItem(idx, 'item_name', e.target.value)}
                             placeholder="Item name (custom)"
-                            style={{ width: '100%', padding: '5px 7px', border: '1px solid #d0d7de', borderRadius: 4, fontSize: 13, boxSizing: 'border-box' }}
+                            style={{ width: '100%', padding: '5px 7px', borderRadius: 4, fontSize: 13, boxSizing: 'border-box' }}
                           />
                         )}
                       </td>
@@ -411,22 +411,22 @@ export default function OrderForm() {
                         <input type="number" step="1" min="1"
                           value={item.quantity}
                           onChange={e => updateItem(idx, 'quantity', e.target.value)}
-                          style={{ width: '100%', padding: '5px 7px', border: '1px solid #d0d7de', borderRadius: 4, fontSize: 13, textAlign: 'right', boxSizing: 'border-box' }}
+                          style={{ width: '100%', padding: '5px 7px', borderRadius: 4, fontSize: 13, textAlign: 'right', boxSizing: 'border-box' }}
                         />
                       </td>
                       <td style={{ padding: '8px 10px' }}>
                         <input type="number" step="0.01" min="0"
                           value={item.unit_price}
                           onChange={e => updateItem(idx, 'unit_price', e.target.value)}
-                          style={{ width: '100%', padding: '5px 7px', border: '1px solid #d0d7de', borderRadius: 4, fontSize: 13, textAlign: 'right', boxSizing: 'border-box' }}
+                          style={{ width: '100%', padding: '5px 7px', borderRadius: 4, fontSize: 13, textAlign: 'right', boxSizing: 'border-box' }}
                         />
                       </td>
-                      <td style={{ padding: '8px 10px', fontWeight: 600, color: '#1e2a3a', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                      <td style={{ padding: '8px 10px', fontWeight: 600, color: 'var(--text-1)', textAlign: 'right', whiteSpace: 'nowrap' }}>
                         {((parseFloat(item.quantity) || 0) * (parseFloat(item.unit_price) || 0)).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
                       </td>
                       <td style={{ padding: '4px 6px', textAlign: 'center' }}>
                         <button type="button" onClick={() => removeItem(idx)}
-                          style={{ padding: '3px 7px', border: '1px solid #f5b7b1', borderRadius: 4, background: '#fde8e8', color: '#c0392b', cursor: 'pointer', fontSize: 12 }}>
+                          style={{ padding: '3px 7px', border: '1px solid var(--danger-b)', borderRadius: 4, background: 'var(--danger-bg)', color: 'var(--danger)', cursor: 'pointer', fontSize: 12 }}>
                           ✕
                         </button>
                       </td>
@@ -434,9 +434,9 @@ export default function OrderForm() {
                   ))}
                 </tbody>
                 <tfoot>
-                  <tr style={{ borderTop: '2px solid #e2e8f0', background: '#f6f8fa' }}>
-                    <td colSpan={3} style={{ padding: '10px 10px', fontWeight: 700, textAlign: 'right', fontSize: 14 }}>Grand Total</td>
-                    <td style={{ padding: '10px 10px', fontWeight: 700, fontSize: 15, color: '#1e2a3a', textAlign: 'right' }}>
+                  <tr style={{ borderTop: '1px solid var(--border)', background: 'var(--surface-2)' }}>
+                    <td colSpan={3} style={{ padding: '10px 10px', fontWeight: 600, textAlign: 'right', fontSize: 14, color: 'var(--text-2)' }}>Grand Total</td>
+                    <td style={{ padding: '10px 10px', fontWeight: 700, fontSize: 15, color: 'var(--text-1)', textAlign: 'right' }}>
                       Rs. {total.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
                     </td>
                     <td></td>

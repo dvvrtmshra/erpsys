@@ -59,7 +59,7 @@ export default function Suppliers() {
       <div className="search-row">
         <input className="search-input" placeholder="Search by name, contact, email…" value={search} onChange={e => setSearch(e.target.value)} />
         {search && <button className="btn-sm" onClick={() => setSearch('')}>Clear</button>}
-        <span style={{ fontSize: 13, color: '#888' }}>{filtered.length} of {suppliers.length}</span>
+        <span style={{ fontSize: 13, color: 'var(--text-3)' }}>{filtered.length} of {suppliers.length}</span>
       </div>
 
       {error && !form && <p className="error" style={{ marginBottom: 12 }}>{error}</p>}

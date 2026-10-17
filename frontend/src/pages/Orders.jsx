@@ -61,7 +61,7 @@ export default function Orders() {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <h2>Orders</h2>
-        <Link to="/orders/new" className="btn-primary" style={{ textDecoration: 'none', padding: '8px 16px', borderRadius: 4, background: '#0969da', color: '#fff', fontSize: 14 }}>+ New Order</Link>
+        <Link to="/orders/new" className="btn-primary" style={{ textDecoration: 'none' }}>+ New Order</Link>
       </div>
 
       {error && <p className="error" style={{ marginBottom: 12 }}>{error}</p>}
@@ -73,7 +73,7 @@ export default function Orders() {
           {['pending','confirmed','shipped','delivered','cancelled'].map(s => <option key={s} value={s}>{s}</option>)}
         </select>
         {(search || statusFilter) && <button className="btn-sm" onClick={() => { setSearch(''); setStatusFilter(''); }}>Clear</button>}
-        <span style={{ fontSize: 13, color: '#888' }}>{filtered.length} of {orders.length}</span>
+        <span style={{ fontSize: 13, color: 'var(--text-3)' }}>{filtered.length} of {orders.length}</span>
       </div>
 
       {loading ? (
@@ -95,7 +95,7 @@ export default function Orders() {
                 <td>Rs. {parseFloat(o.total_amount).toFixed(2)}</td>
                 <td>{new Date(o.created_at).toLocaleDateString()}</td>
                 <td>
-                  <select value={o.status} onChange={e => updateStatus(o.id, e.target.value)} style={{ fontSize: 12, marginRight: 6 }}>
+                  <select value={o.status} onChange={e => updateStatus(o.id, e.target.value)} className="filter-select" style={{ fontSize: 12, padding: '4px 8px', marginRight: 6 }}>
                     {['pending','confirmed','shipped','delivered','cancelled'].map(s => <option key={s}>{s}</option>)}
                   </select>
                   <Link to={`/orders/${o.id}/edit`} className="btn-sm" style={{ textDecoration: 'none', marginRight: 4 }}>Edit</Link>

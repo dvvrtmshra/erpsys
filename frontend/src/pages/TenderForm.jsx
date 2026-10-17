@@ -135,7 +135,7 @@ export default function TenderForm() {
             <strong>Raw Material Suppliers</strong>
             {canEdit && <button type="button" className="btn-sm" onClick={addSupplier}>+ Add Supplier</button>}
           </div>
-          {suppliers.length === 0 && <p style={{ color: '#aaa', fontSize: 13 }}>No suppliers linked yet.</p>}
+          {suppliers.length === 0 && <p style={{ color: 'var(--text-3)', fontSize: 13 }}>No suppliers linked yet.</p>}
           {suppliers.map((s, i) => (
             <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'flex-start' }}>
               <select value={s.supplier_id} onChange={e => updateSupplier(i, 'supplier_id', e.target.value)} style={{ flex: 1 }}>
@@ -154,7 +154,7 @@ export default function TenderForm() {
             <strong>Materials from Inventory</strong>
             {canEdit && <button type="button" className="btn-sm" onClick={addItem}>+ Add from Inventory</button>}
           </div>
-          {items.length === 0 && <p style={{ color: '#aaa', fontSize: 13 }}>No inventory items linked yet.</p>}
+          {items.length === 0 && <p style={{ color: 'var(--text-3)', fontSize: 13 }}>No inventory items linked yet.</p>}
           {items.map((item, i) => {
             const inv = allInventory.find(x => String(x.item_id) === String(item.item_id));
             const stockQty = inv ? parseFloat(inv.quantity) : item.stock_qty;
@@ -175,10 +175,10 @@ export default function TenderForm() {
                     type="number" step="1" min="1" placeholder="Qty needed"
                     value={item.quantity_needed}
                     onChange={e => updateItem(i, 'quantity_needed', e.target.value)}
-                    style={{ width: '100%', borderColor: insufficient ? '#e74c3c' : '' }}
+                    style={{ width: '100%', borderColor: insufficient ? 'var(--danger)' : '' }}
                   />
                   {insufficient && (
-                    <span style={{ fontSize: 11, color: '#e74c3c', display: 'block' }}>
+                    <span style={{ fontSize: 11, color: 'var(--danger)', display: 'block' }}>
                       Only {stockQty} in stock
                     </span>
                   )}

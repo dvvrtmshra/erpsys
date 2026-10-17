@@ -99,14 +99,14 @@ export default function Inventory() {
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: 0, marginBottom: 16, borderBottom: '2px solid #e2e8f0' }}>
+      <div style={{ display: 'flex', gap: 0, marginBottom: 16, borderBottom: '1px solid var(--border)' }}>
         <button
           onClick={() => { setTab('finished'); setSearch(''); }}
           style={{
-            padding: '8px 20px', border: 'none', background: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 600,
-            color: tab === 'finished' ? '#0969da' : '#666',
-            borderBottom: tab === 'finished' ? '2px solid #0969da' : '2px solid transparent',
-            marginBottom: -2,
+            padding: '8px 20px', border: 'none', background: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 500,
+            color: tab === 'finished' ? 'var(--text-1)' : 'var(--text-2)',
+            borderBottom: tab === 'finished' ? '2px solid var(--accent)' : '2px solid transparent',
+            marginBottom: -1,
           }}
         >
           Finished Goods ({finished.length})
@@ -114,10 +114,10 @@ export default function Inventory() {
         <button
           onClick={() => { setTab('raw'); setSearch(''); }}
           style={{
-            padding: '8px 20px', border: 'none', background: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 600,
-            color: tab === 'raw' ? '#0969da' : '#666',
-            borderBottom: tab === 'raw' ? '2px solid #0969da' : '2px solid transparent',
-            marginBottom: -2,
+            padding: '8px 20px', border: 'none', background: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 500,
+            color: tab === 'raw' ? 'var(--text-1)' : 'var(--text-2)',
+            borderBottom: tab === 'raw' ? '2px solid var(--accent)' : '2px solid transparent',
+            marginBottom: -1,
           }}
         >
           Raw Materials ({raw.length})
@@ -132,9 +132,9 @@ export default function Inventory() {
           onChange={e => setSearch(e.target.value)}
         />
         {search && <button className="btn-sm" onClick={() => setSearch('')}>Clear</button>}
-        <span style={{ fontSize: 13, color: '#888' }}>{filtered.length} of {activeList.length} items</span>
+        <span style={{ fontSize: 13, color: 'var(--text-3)' }}>{filtered.length} of {activeList.length} items</span>
       </div>
-      <p style={{ color: '#888', fontSize: 13, marginBottom: 8 }}>Items below their low-stock level are highlighted in yellow.</p>
+      <p style={{ color: 'var(--text-3)', fontSize: 13, marginBottom: 8 }}>Items below their low-stock level are highlighted.</p>
 
       {error && !form && <p className="error" style={{ marginBottom: 12 }}>{error}</p>}
 

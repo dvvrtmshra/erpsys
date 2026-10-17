@@ -7,7 +7,7 @@ const STATUS_COLORS = {
   open: '#27ae60', bidding: '#f39c12', awarded: '#2980b9',
   in_progress: '#8e44ad', completed: '#16a085', cancelled: '#c0392b',
 };
-const TYPE_COLORS = { government: '#1a6b3a', private: '#1a4d8f' };
+const TYPE_COLORS = { government: '#2e8b57', private: '#2383e2' };
 
 export default function Tenders() {
   const [tenders, setTenders] = useState([]);
@@ -44,7 +44,7 @@ export default function Tenders() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <h2>Tenders</h2>
         {canEdit && (
-          <Link to="/tenders/new" className="btn-primary" style={{ textDecoration: 'none', padding: '8px 16px', borderRadius: 4, background: '#0969da', color: '#fff', fontSize: 14 }}>
+          <Link to="/tenders/new" className="btn-primary" style={{ textDecoration: 'none' }}>
             + New Tender
           </Link>
         )}
@@ -57,7 +57,7 @@ export default function Tenders() {
           {['open','bidding','awarded','in_progress','completed','cancelled'].map(s => <option key={s} value={s}>{s.replace('_',' ')}</option>)}
         </select>
         {(search || statusFilter) && <button className="btn-sm" onClick={() => { setSearch(''); setStatusFilter(''); }}>Clear</button>}
-        <span style={{ fontSize: 13, color: '#888' }}>{filtered.length} of {tenders.length}</span>
+        <span style={{ fontSize: 13, color: 'var(--text-3)' }}>{filtered.length} of {tenders.length}</span>
       </div>
 
       <table className="data-table">
@@ -82,7 +82,7 @@ export default function Tenders() {
                 {t.supplier_count > 0 && <span>{t.supplier_count} supplier{t.supplier_count > 1 ? 's' : ''}</span>}
                 {t.supplier_count > 0 && t.item_count > 0 && ', '}
                 {t.item_count > 0 && <span>{t.item_count} inv. item{t.item_count > 1 ? 's' : ''}</span>}
-                {!t.supplier_count && !t.item_count && <span style={{ color: '#aaa' }}>none</span>}
+                {!t.supplier_count && !t.item_count && <span style={{ color: 'var(--text-3)' }}>none</span>}
               </td>
               {canEdit && (
                 <td>

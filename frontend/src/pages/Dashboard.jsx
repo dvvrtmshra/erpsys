@@ -7,8 +7,8 @@ import {
 import api from '../api';
 
 const STATUS_COLORS = {
-  pending: '#f59e0b', confirmed: '#3b82f6', shipped: '#8b5cf6',
-  delivered: '#10b981', cancelled: '#ef4444',
+  pending: '#d09b2c', confirmed: '#2383e2', shipped: '#8b5cf6',
+  delivered: '#4dab85', cancelled: '#eb5757',
 };
 
 export default function Dashboard() {
@@ -54,40 +54,42 @@ export default function Dashboard() {
 
   if (!stats) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh', color: '#94a3b8', gap: 10, fontSize: 14 }}>
-        <div style={{ width: 20, height: 20, border: '2px solid #e2e8f0', borderTopColor: '#6366f1', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
-        Loading dashboard…
+      <div className="loading">
+        <div style={{ width: 18, height: 18, border: '2px solid var(--border)', borderTopColor: 'var(--accent)', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+        Loading…
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
   }
 
   const statCards = [
-    { label: 'Catalog Items', value: stats.catalogCount, icon: BookOpen, color: '#6366f1', bg: '#eef2ff', to: '/catalog' },
-    { label: 'Inventory Items', value: stats.inventoryItems, icon: Package, color: '#0ea5e9', bg: '#f0f9ff', to: '/inventory' },
-    { label: 'Pending Orders', value: stats.pendingOrders, icon: ShoppingCart, color: '#f59e0b', bg: '#fffbeb', to: '/orders' },
-    { label: 'Pending POs', value: stats.pendingPurchases, icon: Truck, color: '#8b5cf6', bg: '#f5f3ff', to: '/purchases' },
-    { label: 'Suppliers', value: stats.supplierCount, icon: Building2, color: '#10b981', bg: '#f0fdf4', to: '/suppliers' },
-    { label: 'Open Tenders', value: stats.openTenders, icon: FileText, color: '#ec4899', bg: '#fdf2f8', to: '/tenders' },
+    { label: 'Catalog Items',    value: stats.catalogCount,       icon: BookOpen,    color: '#6366f1', bg: 'rgba(99,102,241,0.12)',   to: '/catalog' },
+    { label: 'Inventory Items',  value: stats.inventoryItems,     icon: Package,     color: '#2383e2', bg: 'rgba(35,131,226,0.12)',    to: '/inventory' },
+    { label: 'Pending Orders',   value: stats.pendingOrders,      icon: ShoppingCart,color: '#d09b2c', bg: 'rgba(208,155,44,0.12)',    to: '/orders' },
+    { label: 'Pending POs',      value: stats.pendingPurchases,   icon: Truck,       color: '#8b5cf6', bg: 'rgba(139,92,246,0.12)',    to: '/purchases' },
+    { label: 'Suppliers',        value: stats.supplierCount,      icon: Building2,   color: '#4dab85', bg: 'rgba(77,171,133,0.12)',    to: '/suppliers' },
+    { label: 'Open Tenders',     value: stats.openTenders,        icon: FileText,    color: '#ec4899', bg: 'rgba(236,72,153,0.12)',    to: '/tenders' },
   ];
 
   return (
     <div>
       {/* Header */}
-      <div style={{ marginBottom: 28 }}>
-        <h2 style={{ fontSize: 22, fontWeight: 800, color: '#0f172a', letterSpacing: '-0.5px' }}>Dashboard</h2>
-        <p style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>Welcome back — here's what's happening today.</p>
+      <div style={{ marginBottom: 24 }}>
+        <h2 style={{ fontSize: 26, fontWeight: 700, color: 'var(--text-1)', letterSpacing: '-0.5px' }}>Dashboard</h2>
+        <p style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 4 }}>Welcome back — here's what's happening today.</p>
       </div>
 
-      {/* API error warnings (non-fatal) */}
+      {/* API warnings */}
       {warnings.length > 0 && (
         <div style={{
-          display: 'flex', alignItems: 'flex-start', gap: 10, background: '#fff1f2',
-          border: '1px solid #fecdd3', borderRadius: 10, padding: '12px 16px', marginBottom: 16,
+          display: 'flex', alignItems: 'flex-start', gap: 10,
+          background: 'var(--danger-bg)', border: '1px solid var(--danger-b)',
+          borderRadius: 8, padding: '12px 14px', marginBottom: 16,
         }}>
-          <AlertTriangle size={16} color="#be123c" strokeWidth={2} style={{ flexShrink: 0, marginTop: 1 }} />
+          <AlertTriangle size={15} color="var(--danger)" strokeWidth={2} style={{ flexShrink: 0, marginTop: 1 }} />
           <div>
-            <div style={{ fontSize: 12, fontWeight: 600, color: '#be123c', marginBottom: 2 }}>Some data could not be loaded</div>
-            {warnings.map((w, i) => <div key={i} style={{ fontSize: 11, color: '#9f1239' }}>{w}</div>)}
+            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--danger)', marginBottom: 2 }}>Some data could not be loaded</div>
+            {warnings.map((w, i) => <div key={i} style={{ fontSize: 11, color: 'var(--danger)', opacity: 0.8 }}>{w}</div>)}
           </div>
         </div>
       )}
@@ -95,14 +97,15 @@ export default function Dashboard() {
       {/* Low stock alert */}
       {stats.lowStock > 0 && (
         <div style={{
-          display: 'flex', alignItems: 'center', gap: 12, background: '#fffbeb',
-          border: '1px solid #fde68a', borderRadius: 10, padding: '12px 16px', marginBottom: 24,
+          display: 'flex', alignItems: 'center', gap: 10,
+          background: 'var(--warn-bg)', border: '1px solid var(--warn-b)',
+          borderRadius: 8, padding: '10px 14px', marginBottom: 20,
         }}>
-          <AlertTriangle size={18} color="#d97706" strokeWidth={2} style={{ flexShrink: 0 }} />
-          <span style={{ fontSize: 13, color: '#92400e', fontWeight: 500 }}>
-            <strong>{stats.lowStock} item{stats.lowStock > 1 ? 's' : ''}</strong> {stats.lowStock > 1 ? 'are' : 'is'} running low on stock.
+          <AlertTriangle size={15} color="var(--warn)" strokeWidth={2} style={{ flexShrink: 0 }} />
+          <span style={{ fontSize: 13, color: 'var(--warn)', fontWeight: 500 }}>
+            <strong>{stats.lowStock}</strong> item{stats.lowStock > 1 ? 's' : ''} {stats.lowStock > 1 ? 'are' : 'is'} running low on stock.
           </span>
-          <Link to="/inventory" style={{ marginLeft: 'auto', fontSize: 12, color: '#d97706', fontWeight: 600, textDecoration: 'none', whiteSpace: 'nowrap' }}>
+          <Link to="/inventory" style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--warn)', fontWeight: 600, textDecoration: 'none', whiteSpace: 'nowrap', opacity: 0.85 }}>
             View inventory →
           </Link>
         </div>
@@ -114,7 +117,7 @@ export default function Dashboard() {
           <Link key={card.to} to={card.to} style={{ textDecoration: 'none' }}>
             <div className="stat-card">
               <div className="stat-icon" style={{ background: card.bg }}>
-                <card.icon size={18} color={card.color} strokeWidth={2} />
+                <card.icon size={15} color={card.color} strokeWidth={1.8} />
               </div>
               <div className="stat-value">{card.value}</div>
               <div className="stat-label">{card.label}</div>
@@ -124,40 +127,38 @@ export default function Dashboard() {
       </div>
 
       {/* Bottom panels */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
 
         {/* Recent orders */}
-        <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, overflow: 'hidden' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid #f1f5f9' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <TrendingUp size={15} color="#6366f1" strokeWidth={2} />
-              <span style={{ fontWeight: 700, fontSize: 13, color: '#0f172a' }}>Recent Orders</span>
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '13px 16px', borderBottom: '1px solid var(--border)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+              <TrendingUp size={14} color="var(--accent)" strokeWidth={2} />
+              <span style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-1)' }}>Recent Orders</span>
             </div>
-            <Link to="/orders" style={{ fontSize: 12, color: '#6366f1', fontWeight: 600, textDecoration: 'none' }}>View all →</Link>
+            <Link to="/orders" style={{ fontSize: 12, color: 'var(--text-2)', fontWeight: 500, textDecoration: 'none' }}>View all →</Link>
           </div>
           {recentOrders.length === 0 ? (
-            <div style={{ padding: '32px 20px', textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>No orders yet</div>
+            <div style={{ padding: '28px 16px', textAlign: 'center', color: 'var(--text-3)', fontSize: 13 }}>No orders yet</div>
           ) : (
             <div>
               {recentOrders.map((o, i) => (
                 <div key={o.id} style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '11px 20px', borderBottom: i < recentOrders.length - 1 ? '1px solid #f8fafc' : 'none',
+                  padding: '10px 16px', borderBottom: i < recentOrders.length - 1 ? '1px solid var(--border-2)' : 'none',
                 }}>
                   <div>
-                    <div style={{ fontSize: 13, fontWeight: 500, color: '#1e293b' }}>
-                      {o.customer_name || 'Walk-in'}
-                    </div>
-                    <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>Order #{o.id}</div>
+                    <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-1)' }}>{o.customer_name || 'Walk-in'}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 1 }}>Order #{o.id}</div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: '#0f172a' }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-1)' }}>
                       Rs. {parseFloat(o.total_amount).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
                     </div>
                     <span style={{
-                      display: 'inline-block', marginTop: 3, padding: '2px 8px', borderRadius: 99,
-                      fontSize: 10, fontWeight: 600, color: '#fff',
-                      background: STATUS_COLORS[o.status] || '#64748b',
+                      display: 'inline-block', marginTop: 3, padding: '2px 7px', borderRadius: 4,
+                      fontSize: 10, fontWeight: 500, color: 'rgba(255,255,255,0.9)',
+                      background: STATUS_COLORS[o.status] || 'var(--surface-3)',
                     }}>{o.status}</span>
                   </div>
                 </div>
@@ -166,37 +167,36 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* Low stock items */}
-        <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, overflow: 'hidden' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid #f1f5f9' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <AlertTriangle size={15} color="#f59e0b" strokeWidth={2} />
-              <span style={{ fontWeight: 700, fontSize: 13, color: '#0f172a' }}>Low Stock</span>
+        {/* Low stock */}
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '13px 16px', borderBottom: '1px solid var(--border)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+              <AlertTriangle size={14} color="var(--warn)" strokeWidth={2} />
+              <span style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-1)' }}>Low Stock</span>
             </div>
-            <Link to="/inventory" style={{ fontSize: 12, color: '#6366f1', fontWeight: 600, textDecoration: 'none' }}>View all →</Link>
+            <Link to="/inventory" style={{ fontSize: 12, color: 'var(--text-2)', fontWeight: 500, textDecoration: 'none' }}>View all →</Link>
           </div>
           {lowStockItems.length === 0 ? (
-            <div style={{ padding: '32px 20px', textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>All items well-stocked</div>
+            <div style={{ padding: '28px 16px', textAlign: 'center', color: 'var(--text-3)', fontSize: 13 }}>All items well-stocked</div>
           ) : (
             <div>
               {lowStockItems.map((item, i) => (
                 <div key={item.id} style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '11px 20px', borderBottom: i < lowStockItems.length - 1 ? '1px solid #f8fafc' : 'none',
+                  padding: '10px 16px', borderBottom: i < lowStockItems.length - 1 ? '1px solid var(--border-2)' : 'none',
                 }}>
                   <div>
-                    <div style={{ fontSize: 13, fontWeight: 500, color: '#1e293b' }}>{item.item_name}</div>
-                    <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2, textTransform: 'capitalize' }}>
+                    <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-1)' }}>{item.item_name}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 1, textTransform: 'capitalize' }}>
                       {item.type?.replace('_', ' ')}
                     </div>
                   </div>
                   <div style={{
-                    display: 'flex', alignItems: 'center', gap: 6,
-                    background: parseInt(item.quantity) === 0 ? '#fff1f2' : '#fffbeb',
-                    color: parseInt(item.quantity) === 0 ? '#be123c' : '#92400e',
-                    padding: '4px 10px', borderRadius: 99, fontSize: 12, fontWeight: 700,
+                    padding: '3px 9px', borderRadius: 4, fontSize: 12, fontWeight: 500,
+                    background: parseFloat(item.quantity) === 0 ? 'var(--danger-bg)' : 'var(--warn-bg)',
+                    color: parseFloat(item.quantity) === 0 ? 'var(--danger)' : 'var(--warn)',
                   }}>
-                    {parseInt(item.quantity) === 0 ? '⚠ Out of stock' : `${parseInt(item.quantity)} left`}
+                    {parseFloat(item.quantity) === 0 ? 'Out of stock' : `${parseFloat(item.quantity)} left`}
                   </div>
                 </div>
               ))}
@@ -205,10 +205,6 @@ export default function Dashboard() {
         </div>
 
       </div>
-
-      <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
-      `}</style>
     </div>
   );
 }

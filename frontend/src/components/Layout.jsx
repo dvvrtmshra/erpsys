@@ -4,8 +4,9 @@ import { useAuth } from '../context/AuthContext';
 import {
   LayoutDashboard, BookOpen, Package, Users, ShoppingCart,
   Truck, Building2, FileText, Calculator, UserCog, LogOut,
-  Settings, KeyRound, X
+  Settings, KeyRound
 } from 'lucide-react';
+import Modal from './Modal';
 import './Layout.css';
 
 const navItems = [
@@ -45,31 +46,25 @@ function ChangePasswordModal({ onClose }) {
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={e => e.stopPropagation()}>
-        <div className="modal-header">
-          <span>Change Password</span>
-          <button className="modal-close" onClick={onClose}><X size={16} /></button>
+    <Modal title="Change Password" onClose={onClose}>
+      <form onSubmit={submit}>
+        <label>Current Password *
+          <input type="password" value={form.current} onChange={e => setForm({ ...form, current: e.target.value })} required autoFocus />
+        </label>
+        <label>New Password *
+          <input type="password" value={form.next} onChange={e => setForm({ ...form, next: e.target.value })} required />
+        </label>
+        <label>Confirm New Password *
+          <input type="password" value={form.confirm} onChange={e => setForm({ ...form, confirm: e.target.value })} required />
+        </label>
+        {error && <p className="error">{error}</p>}
+        {success && <p className="success">{success}</p>}
+        <div className="modal-actions">
+          <button type="submit" className="btn-primary" disabled={loading}>{loading ? 'Saving…' : 'Change Password'}</button>
+          <button type="button" className="btn-sm" onClick={onClose}>Cancel</button>
         </div>
-        <form onSubmit={submit}>
-          <label>Current Password *
-            <input type="password" value={form.current} onChange={e => setForm({ ...form, current: e.target.value })} required autoFocus />
-          </label>
-          <label>New Password *
-            <input type="password" value={form.next} onChange={e => setForm({ ...form, next: e.target.value })} required />
-          </label>
-          <label>Confirm New Password *
-            <input type="password" value={form.confirm} onChange={e => setForm({ ...form, confirm: e.target.value })} required />
-          </label>
-          {error && <p className="error">{error}</p>}
-          {success && <p className="success">{success}</p>}
-          <div className="modal-actions">
-            <button type="submit" className="btn-primary" disabled={loading}>{loading ? 'Saving…' : 'Change Password'}</button>
-            <button type="button" onClick={onClose}>Cancel</button>
-          </div>
-        </form>
-      </div>
-    </div>
+      </form>
+    </Modal>
   );
 }
 
@@ -92,8 +87,8 @@ export default function Layout() {
       <aside className="sidebar">
         {/* Brand */}
         <div className="sidebar-brand">
+          <div className="sidebar-brand-icon">e</div>
           <div className="sidebar-brand-name">ERP System</div>
-          <div className="sidebar-brand-tagline">Business Management</div>
         </div>
 
         {/* Navigation */}
@@ -104,7 +99,7 @@ export default function Layout() {
               to={to}
               className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
             >
-              <Icon className="nav-icon" size={16} strokeWidth={2} />
+              <Icon className="nav-icon" size={15} strokeWidth={1.8} />
               {label}
             </NavLink>
           ))}
@@ -113,7 +108,7 @@ export default function Layout() {
               to="/users"
               className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
             >
-              <UserCog className="nav-icon" size={16} strokeWidth={2} />
+              <UserCog className="nav-icon" size={15} strokeWidth={1.8} />
               Users
             </NavLink>
           )}
@@ -121,24 +116,24 @@ export default function Layout() {
 
         {/* Footer */}
         <div className="sidebar-footer" ref={menuRef}>
-          <div className="sidebar-user-card" onClick={() => setMenuOpen(o => !o)} title="Account options">
+          <div className="sidebar-user-card" onClick={() => setMenuOpen(o => !o)}>
             <div className="sidebar-avatar">{initials}</div>
             <div className="sidebar-user-info">
               <div className="sidebar-username">{user?.username}</div>
               <div className="sidebar-role">{user?.role}</div>
             </div>
-            <Settings size={14} className="sidebar-settings-icon" />
+            <Settings size={13} className="sidebar-settings-icon" />
           </div>
 
           {menuOpen && (
             <div className="user-menu">
               <button className="user-menu-item" onClick={() => { setMenuOpen(false); setShowPwModal(true); }}>
-                <KeyRound size={13} strokeWidth={2.5} />
+                <KeyRound size={13} strokeWidth={2} />
                 Change Password
               </button>
               <div className="user-menu-divider" />
               <button className="user-menu-item user-menu-danger" onClick={logout}>
-                <LogOut size={13} strokeWidth={2.5} />
+                <LogOut size={13} strokeWidth={2} />
                 Sign out
               </button>
             </div>
