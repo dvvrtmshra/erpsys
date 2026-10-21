@@ -272,7 +272,7 @@ export default function OrderForm() {
           <label style={{ marginBottom: 0 }}>Customer
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 4 }}>
               <select value={customerId} onChange={e => setCustomerId(e.target.value)}
-                style={{ flex: 1 }} className="filter-select">
+                style={{ flex: 1, marginTop: 0 }}>
                 <option value="">— select or create —</option>
                 {customers.map(c => <option key={c.id} value={c.id}>{c.name}{c.phone ? ` (${c.phone})` : ''}</option>)}
               </select>
