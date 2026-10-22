@@ -296,7 +296,7 @@ const TITLEBAR = {
 
 ipcMain.on('titlebar-theme', (_, theme) => {
   if (mainWindow && !mainWindow.isDestroyed()) {
-    mainWindow.setTitleBarOverlay(TITLEBAR[theme] || TITLEBAR.dark);
+    mainWindow.setBackgroundColor(TITLEBAR[theme]?.color || TITLEBAR.dark.color);
   }
 });
 
@@ -313,9 +313,8 @@ function createWindow() {
     minHeight: 700,
     center: true,
     title: 'ERP System',
-    titleBarStyle: 'hidden',
-    titleBarOverlay: TITLEBAR[savedTheme],
     autoHideMenuBar: true,
+    backgroundColor: TITLEBAR[savedTheme].color,
     show: false,
     webPreferences: {
       nodeIntegration: false,
