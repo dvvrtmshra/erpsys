@@ -79,6 +79,7 @@ export default function Layout() {
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('erp-theme', theme);
+    window.electronAPI?.setTitlebarTheme?.(theme);
   }, [theme]);
 
   const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark');

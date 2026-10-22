@@ -1,4 +1,4 @@
-const { app, BrowserWindow, dialog, Menu } = require('electron');
+const { app, BrowserWindow, dialog, Menu, ipcMain } = require('electron');
 const { spawn, execFileSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
@@ -289,8 +289,22 @@ function stopBackend() {
 
 // ── Window ────────────────────────────────────────────────────────────────────
 
+const TITLEBAR = {
+  dark:  { color: '#191919', symbolColor: 'rgba(255,255,255,0.75)', height: 32 },
+  light: { color: '#ffffff', symbolColor: 'rgba(0,0,0,0.65)',       height: 32 },
+};
+
+ipcMain.on('titlebar-theme', (_, theme) => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.setTitleBarOverlay(TITLEBAR[theme] || TITLEBAR.dark);
+  }
+});
+
 function createWindow() {
   Menu.setApplicationMenu(null);
+
+  // Read saved theme so titlebar matches on first paint
+  const savedTheme = 'dark'; // default; renderer will correct it on load
 
   mainWindow = new BrowserWindow({
     width: 1440,
@@ -299,9 +313,15 @@ function createWindow() {
     minHeight: 700,
     center: true,
     title: 'ERP System',
+    titleBarStyle: 'hidden',
+    titleBarOverlay: TITLEBAR[savedTheme],
     autoHideMenuBar: true,
     show: false,
-    webPreferences: { nodeIntegration: false, contextIsolation: true },
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: path.join(__dirname, 'preload.js'),
+    },
   });
 
   // Show the loading screen immediately
