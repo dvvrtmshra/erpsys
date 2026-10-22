@@ -1,4 +1,4 @@
-const { app, BrowserWindow, dialog, Menu, ipcMain } = require('electron');
+﻿const { app, BrowserWindow, dialog, Menu, ipcMain } = require('electron');
 const { spawn, execFileSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
@@ -29,7 +29,7 @@ let mainWindow = null;
 let backendProcess = null;
 let isQuitting = false;
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function waitForPort(port, timeout = 30000) {
   return new Promise((resolve, reject) => {
@@ -69,67 +69,13 @@ function log(msg) {
   console.log(msg);
 }
 
-function setStatus(msg) {
-  log(msg);
-  if (mainWindow && !mainWindow.isDestroyed()) {
-    mainWindow.webContents.executeJavaScript(
-      `var el=document.getElementById('status'); if(el) el.textContent=${JSON.stringify(msg)};`
-    ).catch(() => {});
-  }
-}
 
-// ── Loading screen ────────────────────────────────────────────────────────────
-
-const LOADING_HTML = `<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<style>
-  *{margin:0;padding:0;box-sizing:border-box}
-  html,body{width:100%;height:100%;overflow:hidden}
-  body{
-    background:#0d0d0d;
-    display:flex;flex-direction:column;
-    align-items:center;justify-content:center;
-    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-    color:#fff;user-select:none;-webkit-user-select:none;
-  }
-  .logo{
-    width:56px;height:56px;border-radius:14px;
-    background:linear-gradient(135deg,#2383e2,#6366f1);
-    display:flex;align-items:center;justify-content:center;
-    font-size:22px;font-weight:700;color:#fff;
-    margin-bottom:20px;
-    box-shadow:0 8px 32px rgba(35,131,226,0.35);
-  }
-  .app-name{font-size:20px;font-weight:600;letter-spacing:-0.4px;margin-bottom:6px}
-  .tagline{font-size:12px;color:rgba(255,255,255,0.3);margin-bottom:36px;letter-spacing:0.02em}
-  #status{font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:16px;min-height:18px;transition:opacity 0.2s}
-  .track{width:220px;height:2px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden}
-  .fill{height:100%;border-radius:2px;background:linear-gradient(90deg,#2383e2,#6366f1);
-    animation:indeterminate 1.6s ease-in-out infinite}
-  @keyframes indeterminate{
-    0%{transform:translateX(-100%) scaleX(0.4)}
-    50%{transform:translateX(0%) scaleX(0.6)}
-    100%{transform:translateX(100%) scaleX(0.4)}
-  }
-</style>
-</head>
-<body>
-  <div class="logo">e</div>
-  <div class="app-name">ERP System</div>
-  <div class="tagline">Enterprise Resource Planning</div>
-  <div id="status">Starting services…</div>
-  <div class="track"><div class="fill"></div></div>
-</body>
-</html>`;
-
-// ── PostgreSQL ────────────────────────────────────────────────────────────────
+// â”€â”€ PostgreSQL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function initDb() {
   const { PG_DATA } = paths();
   const initdbExe = path.join(binDir, 'postgres', 'bin', 'initdb.exe');
-  setStatus('Initializing database for first run…');
+  log('Initializing database for first runâ€¦');
   const { pgCtl } = paths();
   if (fs.existsSync(PG_DATA)) {
     try { execFileSync(pgCtl, ['stop', '-D', PG_DATA, '-m', 'immediate'], { stdio: 'pipe' }); } catch (_) {}
@@ -168,7 +114,7 @@ function startPostgres() {
       initDb();
     }
 
-    setStatus('Starting database…');
+    log('Starting databaseâ€¦');
     const pgLog = path.join(dataDir, 'postgres.log');
     const proc = spawn(pgCtl, ['start', '-D', PG_DATA, '-l', pgLog, '-w'], { stdio: 'pipe' });
     proc.on('close', code => {
@@ -200,7 +146,7 @@ function applySchema() {
   const { PG_DATA, psql, SCHEMA_FILE } = paths();
   const markerFile = path.join(PG_DATA, '.schema_applied');
   if (fs.existsSync(markerFile)) return;
-  setStatus('Setting up database schema…');
+  log('Setting up database schemaâ€¦');
   const env = { ...process.env, PGPASSWORD: '' };
   const run = (db, sql) => execFileSync(psql,
     ['-U', 'postgres', '-p', String(PG_PORT), '-d', db, '-c', sql],
@@ -220,7 +166,7 @@ function applySchema() {
 function runMigrations() {
   const { psql, MIGRATE_FILE } = paths();
   if (!fs.existsSync(MIGRATE_FILE)) { log('No migrate.sql found, skipping.'); return; }
-  setStatus('Running database migrations…');
+  log('Running database migrationsâ€¦');
   try {
     const result = execFileSync(psql, ['-U', 'postgres', '-p', String(PG_PORT), '-d', 'erp_db', '-f', MIGRATE_FILE],
       { env: { ...process.env, PGPASSWORD: '' }, stdio: 'pipe' });
@@ -230,11 +176,11 @@ function runMigrations() {
   }
 }
 
-// ── Backend ───────────────────────────────────────────────────────────────────
+// â”€â”€ Backend â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function startBackend() {
   const { BACKEND_EXE } = paths();
-  setStatus('Starting application server…');
+  log('Starting application serverâ€¦');
   const env = {
     ...process.env,
     PORT: String(BACKEND_PORT),
@@ -264,7 +210,7 @@ function startBackend() {
     backendProcess.stderr.on('data', d => log(`[backend:err] ${d.toString().trim()}`));
     backendProcess.on('exit', (code, signal) => {
       if (signal === 'SIGTERM' || signal === 'SIGKILL') return;
-      log(`[backend] exited with code ${code} — restarting (${restartCount + 1}/${MAX_RESTARTS})...`);
+      log(`[backend] exited with code ${code} â€” restarting (${restartCount + 1}/${MAX_RESTARTS})...`);
       if (restartCount < MAX_RESTARTS) {
         restartCount++;
         setTimeout(spawnBackend, 1000);
@@ -287,7 +233,7 @@ function stopBackend() {
   }
 }
 
-// ── Window ────────────────────────────────────────────────────────────────────
+// â”€â”€ Window â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const TITLEBAR = {
   dark:  { color: '#191919', symbolColor: 'rgba(255,255,255,0.75)', height: 32 },
@@ -303,9 +249,6 @@ ipcMain.on('titlebar-theme', (_, theme) => {
 function createWindow() {
   Menu.setApplicationMenu(null);
 
-  // Read saved theme so titlebar matches on first paint
-  const savedTheme = 'dark'; // default; renderer will correct it on load
-
   mainWindow = new BrowserWindow({
     width: 1440,
     height: 900,
@@ -314,8 +257,7 @@ function createWindow() {
     center: true,
     title: 'ERP System',
     autoHideMenuBar: true,
-    backgroundColor: TITLEBAR[savedTheme].color,
-    show: false,
+    backgroundColor: '#191919',
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -323,19 +265,11 @@ function createWindow() {
     },
   });
 
-  // Show the loading screen immediately
-  mainWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(LOADING_HTML)}`);
-  mainWindow.once('ready-to-show', () => mainWindow.show());
+  mainWindow.loadURL(`http://localhost:${BACKEND_PORT}`);
+  mainWindow.on('closed', () => { mainWindow = null; });
 }
 
-function loadApp() {
-  if (mainWindow && !mainWindow.isDestroyed()) {
-    setStatus('Loading…');
-    mainWindow.loadURL(`http://localhost:${BACKEND_PORT}`);
-  }
-}
-
-// ── Auto-update ───────────────────────────────────────────────────────────────
+// â”€â”€ Auto-update â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function checkForUpdates() {
   autoUpdater.autoDownload = true;
@@ -353,7 +287,7 @@ function checkForUpdates() {
 
   autoUpdater.on('download-progress', (progress) => {
     const pct = Math.round(progress.percent);
-    if (mainWindow) mainWindow.setTitle(`ERP System — Downloading update ${pct}%…`);
+    if (mainWindow) mainWindow.setTitle(`ERP System â€” Downloading update ${pct}%â€¦`);
     log(`Update download: ${pct}%`);
   });
 
@@ -397,7 +331,7 @@ function checkJustUpdated() {
   log(`Showed post-update notice for v${version}`);
 }
 
-// ── App lifecycle ─────────────────────────────────────────────────────────────
+// â”€â”€ App lifecycle â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 app.whenReady().then(async () => {
   if (app.isPackaged) {
@@ -410,9 +344,6 @@ app.whenReady().then(async () => {
   fs.mkdirSync(dataDir, { recursive: true });
   const isPackaged = app.isPackaged;
 
-  // Create window immediately so user sees loading screen right away
-  createWindow();
-
   try {
     if (isPackaged) {
       await startPostgres();
@@ -420,7 +351,6 @@ app.whenReady().then(async () => {
       applySchema();
       runMigrations();
       startBackend();
-      setStatus('Almost ready…');
       await waitForPort(BACKEND_PORT);
     } else {
       log('Dev mode: skipping postgres/backend startup, expecting port 3002 to be live.');
@@ -428,14 +358,14 @@ app.whenReady().then(async () => {
         throw new Error('Backend not running on port 3002. Start it with: node backend/src/index.js');
       });
     }
-    loadApp();
+    createWindow();
     if (isPackaged) {
       checkJustUpdated();
       checkForUpdates();
     }
   } catch (err) {
     log(`Startup error: ${err.message}`);
-    dialog.showErrorBox('ERP System — Startup Failed', err.message);
+    dialog.showErrorBox('ERP System â€” Startup Failed', err.message);
     app.quit();
   }
 });
