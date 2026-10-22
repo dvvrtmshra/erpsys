@@ -3,7 +3,7 @@
   "version": "2.0.8",
   "private": true,
   "main": "main.js",
-  "author": "Apoorwa M",
+  "author": "Dev Vrat Mishra",
   "description": "Enterprise Resource Planning System",
   "workspaces": [
     "backend",
@@ -21,7 +21,7 @@
   "build": {
     "appId": "com.erpsys.app",
     "productName": "ERP System",
-    "copyright": "Copyright © 2025 Apoorwa M",
+    "copyright": "Copyright © 2025 Dev Vrat Mishra",
     "directories": {
       "output": "installer"
     },
