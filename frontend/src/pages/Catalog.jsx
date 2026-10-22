@@ -1,24 +1,132 @@
 import { useEffect, useState } from 'react';
+import { X, BookOpen } from 'lucide-react';
 import api from '../api';
 import { useAuth } from '../context/AuthContext';
 import Modal from '../components/Modal';
 
 const CATEGORIES = [
-  'Garden Equipment',
-  'Indoor Play Equipment',
-  'Outdoor Fitness Equipment',
-  'Park Furniture',
-  'Sports Equipment',
-  'School Equipment',
-  'Water Play Equipment',
-  'Sensory Play Equipment',
+  'Garden Equipment', 'Indoor Play Equipment', 'Outdoor Fitness Equipment',
+  'Park Furniture', 'Sports Equipment', 'School Equipment',
+  'Water Play Equipment', 'Sensory Play Equipment',
 ];
 
 const emptyForm = { catalog_number: '', name: '', category: '', description: '', unit_price: '', unit: 'unit' };
 
+function ItemPreview({ item, onClose, onEdit, onDelete, canEdit }) {
+  useEffect(() => {
+    const handler = e => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [onClose]);
+
+  return (
+    <div
+      style={{
+        position: 'fixed', inset: 0,
+        background: 'rgba(0,0,0,0.45)',
+        backdropFilter: 'blur(6px)',
+        WebkitBackdropFilter: 'blur(6px)',
+        zIndex: 300,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: 24,
+      }}
+      onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div style={{
+        width: 540,
+        maxWidth: '100%',
+        maxHeight: '88vh',
+        background: 'var(--surface)',
+        border: '1px solid var(--border)',
+        borderRadius: 14,
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+        boxShadow: '0 32px 80px rgba(0,0,0,0.5)',
+        animation: 'previewIn 0.18s ease',
+      }}>
+        {/* Image area */}
+        {item.image_url ? (
+          <div style={{ width: '100%', height: 220, flexShrink: 0, overflow: 'hidden', background: 'var(--surface-2)' }}>
+            <img
+              src={`http://localhost:3002${item.image_url}`}
+              alt={item.name}
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            />
+          </div>
+        ) : (
+          <div style={{
+            width: '100%', height: 120, flexShrink: 0, background: 'var(--surface-2)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <BookOpen size={36} color="var(--text-3)" strokeWidth={1} />
+          </div>
+        )}
+
+        {/* Content */}
+        <div style={{ padding: '20px 24px 24px', flex: 1, overflowY: 'auto' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 10 }}>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-3)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 4 }}>
+                {item.catalog_number}
+              </div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-1)', letterSpacing: '-0.3px', lineHeight: 1.2 }}>
+                {item.name}
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 6, borderRadius: 6, flexShrink: 0, display: 'flex', alignItems: 'center' }}
+            >
+              <X size={16} strokeWidth={2} />
+            </button>
+          </div>
+
+          {item.category && (
+            <span style={{
+              display: 'inline-block', padding: '3px 10px', borderRadius: 5,
+              background: 'var(--accent-bg)', color: 'var(--accent)',
+              fontSize: 12, fontWeight: 500, marginBottom: 14,
+            }}>
+              {item.category}
+            </span>
+          )}
+
+          {item.description && (
+            <p style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.7, marginBottom: 18 }}>
+              {item.description}
+            </p>
+          )}
+
+          <div style={{ display: 'flex', gap: 28, paddingTop: 16, borderTop: '1px solid var(--border-2)', marginBottom: canEdit ? 16 : 0 }}>
+            <div>
+              <div style={{ fontSize: 10, fontWeight: 500, color: 'var(--text-3)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 4 }}>Unit Price</div>
+              <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-1)', letterSpacing: '-0.4px' }}>
+                Rs.&nbsp;{parseFloat(item.unit_price || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize: 10, fontWeight: 500, color: 'var(--text-3)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 4 }}>Unit</div>
+              <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-2)', marginTop: 3 }}>{item.unit}</div>
+            </div>
+          </div>
+
+          {canEdit && (
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button className="btn-primary" onClick={onEdit}>Edit Item</button>
+              <button className="btn-sm btn-danger" onClick={onDelete}>Delete</button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Catalog() {
   const [items, setItems] = useState([]);
   const [form, setForm] = useState(null);
+  const [previewItem, setPreviewItem] = useState(null);
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [error, setError] = useState('');
@@ -86,6 +194,7 @@ export default function Catalog() {
     setError('');
     try {
       await api.delete(`/catalog/${id}`);
+      setPreviewItem(null);
       load();
     } catch (err) {
       setError(err.response?.data?.error || 'Delete failed');
@@ -145,6 +254,16 @@ export default function Catalog() {
         </Modal>
       )}
 
+      {previewItem && (
+        <ItemPreview
+          item={previewItem}
+          canEdit={canEdit}
+          onClose={() => setPreviewItem(null)}
+          onEdit={() => { setPreviewItem(null); openForm(previewItem); }}
+          onDelete={() => del(previewItem.id)}
+        />
+      )}
+
       <table className="data-table">
         <thead>
           <tr>
@@ -154,19 +273,25 @@ export default function Catalog() {
         </thead>
         <tbody>
           {filtered.map(item => (
-            <tr key={item.id}>
+            <tr
+              key={item.id}
+              style={{ cursor: 'pointer' }}
+              onClick={() => setPreviewItem(item)}
+            >
               <td>
                 {item.image_url
-                  ? <img src={`http://localhost:3002${item.image_url}`} alt={item.name} style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 4 }} />
-                  : <span style={{ color: 'var(--text-3)', fontSize: 12 }}>No image</span>}
+                  ? <img src={`http://localhost:3002${item.image_url}`} alt={item.name} style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 6 }} />
+                  : <div style={{ width: 40, height: 40, borderRadius: 6, background: 'var(--surface-2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <BookOpen size={14} color="var(--text-3)" strokeWidth={1.5} />
+                    </div>}
               </td>
-              <td>{item.catalog_number}</td>
-              <td>{item.name}</td>
+              <td style={{ color: 'var(--text-2)', fontFamily: 'monospace', fontSize: 12 }}>{item.catalog_number}</td>
+              <td style={{ fontWeight: 500 }}>{item.name}</td>
               <td>{item.category || <span style={{ color: 'var(--text-3)' }}>—</span>}</td>
               <td>{parseFloat(item.unit_price).toFixed(2)}</td>
               <td>{item.unit}</td>
               {canEdit && (
-                <td>
+                <td onClick={e => e.stopPropagation()}>
                   <button className="btn-sm" onClick={() => openForm(item)}>Edit</button>
                   <button className="btn-sm btn-danger" onClick={() => del(item.id)}>Delete</button>
                 </td>

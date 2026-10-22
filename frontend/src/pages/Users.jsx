@@ -8,7 +8,7 @@ const empty = { username: '', email: '', password: '', role: 'viewer' };
 const ROLE_META = {
   admin:   { label: 'Admin',   color: '#7c3aed', bg: 'rgba(124,58,237,0.12)', desc: 'Full access — manage users, all data, settings' },
   manager: { label: 'Manager', color: '#0369a1', bg: 'rgba(3,105,161,0.12)',  desc: 'Create and edit orders, purchases, inventory, catalog' },
-  viewer:  { label: 'Viewer',  color: 'rgba(255,255,255,0.45)', bg: 'rgba(255,255,255,0.07)', desc: 'Read-only access to all data' },
+  viewer:  { label: 'Viewer',  color: '#6b7280', bg: 'rgba(107,114,128,0.12)', desc: 'Read-only access to all data' },
 };
 
 function RoleBadge({ role }) {

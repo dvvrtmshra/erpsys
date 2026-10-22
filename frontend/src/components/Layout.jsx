@@ -2,23 +2,23 @@ import { useState, useEffect, useRef } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
-  LayoutDashboard, BookOpen, Package, Users, ShoppingCart,
-  Truck, Building2, FileText, Calculator, UserCog, LogOut,
-  Settings, KeyRound
+  LayoutGrid, BookMarked, Archive, UsersRound, ShoppingBag,
+  Package, Building, ScrollText, Wallet, ShieldCheck, LogOut,
+  Settings2, KeyRound, SunMedium, MoonStar
 } from 'lucide-react';
 import Modal from './Modal';
 import './Layout.css';
 
 const navItems = [
-  { to: '/dashboard',  label: 'Dashboard',  icon: LayoutDashboard },
-  { to: '/catalog',    label: 'Catalog',     icon: BookOpen },
-  { to: '/inventory',  label: 'Inventory',   icon: Package },
-  { to: '/customers',  label: 'Customers',   icon: Users },
-  { to: '/orders',     label: 'Orders',      icon: ShoppingCart },
-  { to: '/purchases',  label: 'Purchases',   icon: Truck },
-  { to: '/suppliers',  label: 'Suppliers',   icon: Building2 },
-  { to: '/tenders',    label: 'Tenders',     icon: FileText },
-  { to: '/accounting', label: 'Accounting',  icon: Calculator },
+  { to: '/dashboard',  label: 'Dashboard',  icon: LayoutGrid },
+  { to: '/catalog',    label: 'Catalog',     icon: BookMarked },
+  { to: '/inventory',  label: 'Inventory',   icon: Archive },
+  { to: '/customers',  label: 'Customers',   icon: UsersRound },
+  { to: '/orders',     label: 'Orders',      icon: ShoppingBag },
+  { to: '/purchases',  label: 'Purchases',   icon: Package },
+  { to: '/suppliers',  label: 'Suppliers',   icon: Building },
+  { to: '/tenders',    label: 'Tenders',     icon: ScrollText },
+  { to: '/accounting', label: 'Accounting',  icon: Wallet },
 ];
 
 function ChangePasswordModal({ onClose }) {
@@ -74,6 +74,14 @@ export default function Layout() {
   const [showPwModal, setShowPwModal] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef();
+  const [theme, setTheme] = useState(() => localStorage.getItem('erp-theme') || 'dark');
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('erp-theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark');
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -85,36 +93,29 @@ export default function Layout() {
   return (
     <div className="layout">
       <aside className="sidebar">
-        {/* Brand */}
         <div className="sidebar-brand">
           <div className="sidebar-brand-icon">e</div>
-          <div className="sidebar-brand-name">ERP System</div>
+          <span className="sidebar-brand-name">ERP System</span>
+          <button className="theme-toggle" onClick={toggleTheme} title={theme === 'dark' ? 'Light mode' : 'Dark mode'}>
+            {theme === 'dark' ? <SunMedium size={14} strokeWidth={2} /> : <MoonStar size={14} strokeWidth={2} />}
+          </button>
         </div>
 
-        {/* Navigation */}
         <nav>
           {navItems.map(({ to, label, icon: Icon }) => (
-            <NavLink
-              key={to}
-              to={to}
-              className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
-            >
-              <Icon className="nav-icon" size={15} strokeWidth={1.8} />
+            <NavLink key={to} to={to} className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
+              <Icon className="nav-icon" size={16} strokeWidth={1.6} />
               {label}
             </NavLink>
           ))}
           {user?.role === 'admin' && (
-            <NavLink
-              to="/users"
-              className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
-            >
-              <UserCog className="nav-icon" size={15} strokeWidth={1.8} />
+            <NavLink to="/users" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
+              <ShieldCheck className="nav-icon" size={16} strokeWidth={1.6} />
               Users
             </NavLink>
           )}
         </nav>
 
-        {/* Footer */}
         <div className="sidebar-footer" ref={menuRef}>
           <div className="sidebar-user-card" onClick={() => setMenuOpen(o => !o)}>
             <div className="sidebar-avatar">{initials}</div>
@@ -122,19 +123,16 @@ export default function Layout() {
               <div className="sidebar-username">{user?.username}</div>
               <div className="sidebar-role">{user?.role}</div>
             </div>
-            <Settings size={13} className="sidebar-settings-icon" />
+            <Settings2 size={13} className="sidebar-settings-icon" />
           </div>
-
           {menuOpen && (
             <div className="user-menu">
               <button className="user-menu-item" onClick={() => { setMenuOpen(false); setShowPwModal(true); }}>
-                <KeyRound size={13} strokeWidth={2} />
-                Change Password
+                <KeyRound size={13} strokeWidth={2} /> Change Password
               </button>
               <div className="user-menu-divider" />
               <button className="user-menu-item user-menu-danger" onClick={logout}>
-                <LogOut size={13} strokeWidth={2} />
-                Sign out
+                <LogOut size={13} strokeWidth={2} /> Sign out
               </button>
             </div>
           )}
