@@ -3,6 +3,8 @@
   "version": "2.0.8",
   "private": true,
   "main": "main.js",
+  "author": "Apoorwa M",
+  "description": "Enterprise Resource Planning System",
   "workspaces": [
     "backend",
     "frontend"
@@ -19,6 +21,7 @@
   "build": {
     "appId": "com.erpsys.app",
     "productName": "ERP System",
+    "copyright": "Copyright © 2025 Apoorwa M",
     "directories": {
       "output": "installer"
     },

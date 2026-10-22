@@ -7,16 +7,12 @@ const { autoUpdater } = require('electron-updater');
 
 app.setName('ERP System');
 
-// Two roots:
-//   binDir  — read-only install resources (postgres binaries, backend.exe, frontend)
-//   dataDir — writable user data (pgdata, logs, uploads)
 let binDir;
 let dataDir;
 
 const BACKEND_PORT = 3002;
 const PG_PORT = 5433;
 
-// Lazy path helpers — only valid after dirs are set in whenReady
 const paths = () => {
   const PG_BIN = path.join(binDir, 'postgres', 'bin');
   return {
@@ -33,7 +29,7 @@ let mainWindow = null;
 let backendProcess = null;
 let isQuitting = false;
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function waitForPort(port, timeout = 30000) {
   return new Promise((resolve, reject) => {
@@ -50,7 +46,6 @@ function waitForPort(port, timeout = 30000) {
   });
 }
 
-// Waits until PostgreSQL is actually ready to accept queries (not just TCP open)
 function waitForPostgres(timeout = 60000) {
   const pgIsReady = path.join(binDir, 'postgres', 'bin', 'pg_isready.exe');
   return new Promise((resolve, reject) => {
@@ -74,17 +69,70 @@ function log(msg) {
   console.log(msg);
 }
 
+function setStatus(msg) {
+  log(msg);
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.executeJavaScript(
+      `var el=document.getElementById('status'); if(el) el.textContent=${JSON.stringify(msg)};`
+    ).catch(() => {});
+  }
+}
+
+// ── Loading screen ────────────────────────────────────────────────────────────
+
+const LOADING_HTML = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:100%;height:100%;overflow:hidden}
+  body{
+    background:#0d0d0d;
+    display:flex;flex-direction:column;
+    align-items:center;justify-content:center;
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    color:#fff;user-select:none;-webkit-user-select:none;
+  }
+  .logo{
+    width:56px;height:56px;border-radius:14px;
+    background:linear-gradient(135deg,#2383e2,#6366f1);
+    display:flex;align-items:center;justify-content:center;
+    font-size:22px;font-weight:700;color:#fff;
+    margin-bottom:20px;
+    box-shadow:0 8px 32px rgba(35,131,226,0.35);
+  }
+  .app-name{font-size:20px;font-weight:600;letter-spacing:-0.4px;margin-bottom:6px}
+  .tagline{font-size:12px;color:rgba(255,255,255,0.3);margin-bottom:36px;letter-spacing:0.02em}
+  #status{font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:16px;min-height:18px;transition:opacity 0.2s}
+  .track{width:220px;height:2px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden}
+  .fill{height:100%;border-radius:2px;background:linear-gradient(90deg,#2383e2,#6366f1);
+    animation:indeterminate 1.6s ease-in-out infinite}
+  @keyframes indeterminate{
+    0%{transform:translateX(-100%) scaleX(0.4)}
+    50%{transform:translateX(0%) scaleX(0.6)}
+    100%{transform:translateX(100%) scaleX(0.4)}
+  }
+</style>
+</head>
+<body>
+  <div class="logo">e</div>
+  <div class="app-name">ERP System</div>
+  <div class="tagline">Enterprise Resource Planning</div>
+  <div id="status">Starting services…</div>
+  <div class="track"><div class="fill"></div></div>
+</body>
+</html>`;
+
 // ── PostgreSQL ────────────────────────────────────────────────────────────────
 
 function initDb() {
   const { PG_DATA } = paths();
   const initdbExe = path.join(binDir, 'postgres', 'bin', 'initdb.exe');
-  log('Initializing PostgreSQL data directory...');
-  // Stop any running postgres before wiping pgdata (avoids EBUSY)
+  setStatus('Initializing database for first run…');
   const { pgCtl } = paths();
   if (fs.existsSync(PG_DATA)) {
     try { execFileSync(pgCtl, ['stop', '-D', PG_DATA, '-m', 'immediate'], { stdio: 'pipe' }); } catch (_) {}
-    // Wait briefly for postgres to release file locks
     Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 1500);
     try {
       fs.rmSync(PG_DATA, { recursive: true, force: true });
@@ -113,27 +161,20 @@ function initDb() {
 function startPostgres() {
   const { PG_DATA, pgCtl } = paths();
   return new Promise((resolve, reject) => {
-    // Kill any lingering postgres from a previous crash or fast-close
     try { execFileSync(pgCtl, ['stop', '-D', PG_DATA, '-m', 'immediate'], { stdio: 'pipe' }); } catch (_) {}
 
     const schemaApplied = fs.existsSync(path.join(PG_DATA, '.schema_applied'));
     if (!fs.existsSync(path.join(PG_DATA, 'PG_VERSION')) || !schemaApplied) {
-      // No pgdata OR previous init failed before schema was applied — start fresh
       initDb();
     }
 
-    log('Starting PostgreSQL...');
+    setStatus('Starting database…');
     const pgLog = path.join(dataDir, 'postgres.log');
     const proc = spawn(pgCtl, ['start', '-D', PG_DATA, '-l', pgLog, '-w'], { stdio: 'pipe' });
     proc.on('close', code => {
       if (code === 0) { log('PostgreSQL started.'); resolve(); return; }
-      // code 1 can mean "already running" — verify by checking the port
       const sock = require('net').createConnection({ port: PG_PORT, host: '127.0.0.1' });
-      sock.once('connect', () => {
-        sock.destroy();
-        log('PostgreSQL was already running, continuing.');
-        resolve();
-      });
+      sock.once('connect', () => { sock.destroy(); log('PostgreSQL was already running.'); resolve(); });
       sock.once('error', () => {
         sock.destroy();
         const pgLogContent = fs.existsSync(pgLog)
@@ -159,17 +200,15 @@ function applySchema() {
   const { PG_DATA, psql, SCHEMA_FILE } = paths();
   const markerFile = path.join(PG_DATA, '.schema_applied');
   if (fs.existsSync(markerFile)) return;
-  log('Applying database schema...');
+  setStatus('Setting up database schema…');
   const env = { ...process.env, PGPASSWORD: '' };
   const run = (db, sql) => execFileSync(psql,
     ['-U', 'postgres', '-p', String(PG_PORT), '-d', db, '-c', sql],
     { env, stdio: 'pipe' }
   );
   try {
-    // Create role and database (ignore errors if they already exist)
     try { run('postgres', "CREATE ROLE erp_user WITH LOGIN PASSWORD 'erppass123';"); } catch (_) {}
     try { run('postgres', 'CREATE DATABASE erp_db OWNER erp_user;'); } catch (_) {}
-    // Apply tables to erp_db
     execFileSync(psql, ['-U', 'postgres', '-p', String(PG_PORT), '-d', 'erp_db', '-f', SCHEMA_FILE], { env, stdio: 'pipe' });
   } catch (e) {
     throw new Error(`Schema apply failed: ${e.stderr ? e.stderr.toString() : e.message}`);
@@ -181,14 +220,13 @@ function applySchema() {
 function runMigrations() {
   const { psql, MIGRATE_FILE } = paths();
   if (!fs.existsSync(MIGRATE_FILE)) { log('No migrate.sql found, skipping.'); return; }
-  log(`Running migrations from: ${MIGRATE_FILE}`);
+  setStatus('Running database migrations…');
   try {
     const result = execFileSync(psql, ['-U', 'postgres', '-p', String(PG_PORT), '-d', 'erp_db', '-f', MIGRATE_FILE],
       { env: { ...process.env, PGPASSWORD: '' }, stdio: 'pipe' });
     log(`Migrations complete: ${result ? result.toString().trim() : 'ok'}`);
   } catch (e) {
-    const errText = e.stderr ? e.stderr.toString() : e.message;
-    log(`Migration error (non-fatal): ${errText}`);
+    log(`Migration error (non-fatal): ${e.stderr ? e.stderr.toString() : e.message}`);
   }
 }
 
@@ -196,7 +234,7 @@ function runMigrations() {
 
 function startBackend() {
   const { BACKEND_EXE } = paths();
-  log('Starting backend...');
+  setStatus('Starting application server…');
   const env = {
     ...process.env,
     PORT: String(BACKEND_PORT),
@@ -214,20 +252,18 @@ function startBackend() {
   const MAX_RESTARTS = 5;
 
   function spawnBackend() {
-    // Kill any process still holding port 3002 (left over from a previous instance during auto-update)
     try {
       execFileSync('powershell', [
         '-NonInteractive', '-Command',
         `$p=(Get-NetTCPConnection -LocalPort 3002 -ErrorAction SilentlyContinue).OwningProcess; if($p){Stop-Process -Id $p -Force -ErrorAction SilentlyContinue}`
       ], { stdio: 'pipe', timeout: 4000 });
-      // Brief pause so the OS fully releases the port before we bind it again
       Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 600);
     } catch (_) {}
     backendProcess = spawn(BACKEND_EXE, [], { env, stdio: 'pipe' });
     backendProcess.stdout.on('data', d => log(`[backend] ${d.toString().trim()}`));
     backendProcess.stderr.on('data', d => log(`[backend:err] ${d.toString().trim()}`));
     backendProcess.on('exit', (code, signal) => {
-      if (signal === 'SIGTERM' || signal === 'SIGKILL') return; // intentional stop
+      if (signal === 'SIGTERM' || signal === 'SIGKILL') return;
       log(`[backend] exited with code ${code} — restarting (${restartCount + 1}/${MAX_RESTARTS})...`);
       if (restartCount < MAX_RESTARTS) {
         restartCount++;
@@ -246,7 +282,6 @@ function stopBackend() {
   if (backendProcess) {
     try { backendProcess.kill('SIGKILL'); } catch (_) {}
     backendProcess = null;
-    // Give the OS ~800 ms to reclaim port 3002 before anything else starts
     Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 800);
     log('Backend stopped.');
   }
@@ -255,18 +290,30 @@ function stopBackend() {
 // ── Window ────────────────────────────────────────────────────────────────────
 
 function createWindow() {
-  // Remove the default File/Edit/View/Window/Help menu bar
   Menu.setApplicationMenu(null);
 
   mainWindow = new BrowserWindow({
-    width: 1280,
-    height: 800,
+    width: 1440,
+    height: 900,
+    minWidth: 1100,
+    minHeight: 700,
+    center: true,
     title: 'ERP System',
     autoHideMenuBar: true,
+    show: false,
     webPreferences: { nodeIntegration: false, contextIsolation: true },
   });
-  mainWindow.loadURL(`http://localhost:${BACKEND_PORT}`);
-  mainWindow.on('closed', () => { mainWindow = null; });
+
+  // Show the loading screen immediately
+  mainWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(LOADING_HTML)}`);
+  mainWindow.once('ready-to-show', () => mainWindow.show());
+}
+
+function loadApp() {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    setStatus('Loading…');
+    mainWindow.loadURL(`http://localhost:${BACKEND_PORT}`);
+  }
 }
 
 // ── Auto-update ───────────────────────────────────────────────────────────────
@@ -294,7 +341,6 @@ function checkForUpdates() {
   autoUpdater.on('update-downloaded', (info) => {
     if (mainWindow) mainWindow.setTitle('ERP System');
     log(`Update downloaded: v${info.version}`);
-    // Write a flag so the next launch can show "just updated" message
     fs.writeFileSync(path.join(dataDir, '.just_updated'), info.version);
     dialog.showMessageBox(mainWindow, {
       type: 'info',
@@ -304,7 +350,6 @@ function checkForUpdates() {
       defaultId: 0,
     }).then(({ response }) => {
       if (response === 0) {
-        // Stop the backend first so it releases port 3002 before the new instance starts
         stopBackend();
         isQuitting = true;
         setTimeout(() => autoUpdater.quitAndInstall(), 1500);
@@ -337,8 +382,8 @@ function checkJustUpdated() {
 
 app.whenReady().then(async () => {
   if (app.isPackaged) {
-    binDir  = process.resourcesPath;                    // C:\Program Files\ERP System\resources
-    dataDir = app.getPath('userData');                  // C:\Users\HP\AppData\Roaming\ERP System
+    binDir  = process.resourcesPath;
+    dataDir = app.getPath('userData');
   } else {
     binDir  = __dirname;
     dataDir = __dirname;
@@ -346,23 +391,25 @@ app.whenReady().then(async () => {
   fs.mkdirSync(dataDir, { recursive: true });
   const isPackaged = app.isPackaged;
 
+  // Create window immediately so user sees loading screen right away
+  createWindow();
+
   try {
     if (isPackaged) {
-      // Packaged: start embedded postgres + backend.exe
       await startPostgres();
       await waitForPostgres();
       applySchema();
       runMigrations();
       startBackend();
+      setStatus('Almost ready…');
       await waitForPort(BACKEND_PORT);
     } else {
-      // Dev: assume postgres and backend are already running
       log('Dev mode: skipping postgres/backend startup, expecting port 3002 to be live.');
       await waitForPort(BACKEND_PORT, 5000).catch(() => {
         throw new Error('Backend not running on port 3002. Start it with: node backend/src/index.js');
       });
     }
-    createWindow();
+    loadApp();
     if (isPackaged) {
       checkJustUpdated();
       checkForUpdates();
