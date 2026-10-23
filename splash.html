@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overflow: hidden; }
+  body {
+    background: #191919;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    color: #fff;
+    user-select: none; -webkit-user-select: none;
+  }
+  .logo {
+    width: 60px; height: 60px; border-radius: 16px;
+    background: linear-gradient(135deg, #2383e2, #6366f1);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; font-weight: 700; color: #fff;
+    margin-bottom: 22px;
+    box-shadow: 0 8px 32px rgba(35,131,226,0.3);
+  }
+  .name { font-size: 18px; font-weight: 600; letter-spacing: -0.3px; margin-bottom: 5px; }
+  .sub  { font-size: 12px; color: rgba(255,255,255,0.28); margin-bottom: 40px; letter-spacing: 0.04em; }
+  #msg  { font-size: 12px; color: rgba(255,255,255,0.35); margin-bottom: 18px; min-height: 16px; }
+  .track { width: 200px; height: 2px; background: rgba(255,255,255,0.07); border-radius: 2px; overflow: hidden; }
+  .bar   { height: 100%; border-radius: 2px; background: linear-gradient(90deg, #2383e2, #6366f1); animation: slide 1.5s ease-in-out infinite; }
+  @keyframes slide {
+    0%   { transform: translateX(-100%) scaleX(.5); }
+    50%  { transform: translateX(30%)   scaleX(.6); }
+    100% { transform: translateX(200%)  scaleX(.5); }
+  }
+</style>
+</head>
+<body>
+  <div class="logo">e</div>
+  <div class="name">ERP System</div>
+  <div class="sub">Enterprise Resource Planning</div>
+  <div id="msg">Starting…</div>
+  <div class="track"><div class="bar"></div></div>
+</body>
+</html>
