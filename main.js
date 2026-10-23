@@ -107,12 +107,24 @@ function initDb() {
   log('PostgreSQL data directory initialized.');
 }
 
+function killPort(port) {
+  try {
+    execFileSync('powershell', ['-NonInteractive', '-Command',
+      `$p=(Get-NetTCPConnection -LocalPort ${port} -ErrorAction SilentlyContinue).OwningProcess; if($p){Stop-Process -Id $p -Force -ErrorAction SilentlyContinue}`
+    ], { stdio: 'pipe', timeout: 5000 });
+  } catch (_) {}
+}
+
 function startPostgres() {
   const { PG_DATA, pgCtl } = paths();
+  const pgLog = path.join(dataDir, 'postgres.log');
   return new Promise((resolve, reject) => {
+    // Stop any running instance cleanly
     try { execFileSync(pgCtl, ['stop', '-D', PG_DATA, '-m', 'immediate'], { stdio: 'pipe', timeout: 15000 }); } catch (_) {}
-    // Remove stale postmaster.pid left by improper shutdown — pg_ctl start would exit 0 immediately
-    // thinking postgres is running, but it isn't, causing waitForPostgres to time out.
+    // Kill anything occupying port 5433 (leftover from a crashed session)
+    killPort(PG_PORT);
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 500);
+    // Remove stale postmaster.pid so pg_ctl doesn't think postgres is already up
     const pidFile = path.join(PG_DATA, 'postmaster.pid');
     if (fs.existsSync(pidFile)) {
       try { fs.unlinkSync(pidFile); log('Cleared stale postmaster.pid'); } catch (_) {}
@@ -122,10 +134,15 @@ function startPostgres() {
       initDb();
     }
     setSplashMsg('Starting database...');
-    const pgLog = path.join(dataDir, 'postgres.log');
-    const proc = spawn(pgCtl, ['start', '-D', PG_DATA, '-l', pgLog, '-w'], { stdio: 'pipe' });
+    // No -w flag: pg_ctl returns immediately after spawning postgres.
+    // waitForPostgres() polls readiness independently with a 120s timeout.
+    // With -w, pg_ctl has its own 60s wait and exits non-zero when postgres
+    // takes longer — which this machine hits regularly (43-76s start times).
+    const proc = spawn(pgCtl, ['start', '-D', PG_DATA, '-l', pgLog], { stdio: 'pipe' });
     proc.on('close', code => {
-      if (code === 0) { log('PostgreSQL started.'); resolve(); return; }
+      if (code === 0) { log('PostgreSQL spawned.'); resolve(); return; }
+      // Non-zero without -w means pg_ctl itself failed to launch the process.
+      // Check if postgres is already up from a previous session.
       const sock = net.createConnection({ port: PG_PORT, host: '127.0.0.1' });
       sock.once('connect', () => { sock.destroy(); log('PostgreSQL already running.'); resolve(); });
       sock.once('error', () => {
@@ -322,21 +339,8 @@ app.whenReady().then(async () => {
 
   try {
     if (app.isPackaged) {
-      try {
-        await startPostgres();
-        await waitForPostgres();
-      } catch (pgErr) {
-        // First attempt failed — force-clean any lock files and retry once
-        log(`Postgres start failed (${pgErr.message}), retrying with clean state...`);
-        setSplashMsg('Retrying database startup...');
-        const { PG_DATA, pgCtl } = paths();
-        try { execFileSync(pgCtl, ['stop', '-D', PG_DATA, '-m', 'immediate'], { stdio: 'pipe', timeout: 15000 }); } catch (_) {}
-        const pidFile = path.join(PG_DATA, 'postmaster.pid');
-        if (fs.existsSync(pidFile)) { try { fs.unlinkSync(pidFile); } catch (_) {} }
-        Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 2000);
-        await startPostgres();
-        await waitForPostgres();
-      }
+      await startPostgres();
+      await waitForPostgres();
       applySchema();
       runMigrations();
       startBackend();
