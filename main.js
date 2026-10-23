@@ -322,8 +322,21 @@ app.whenReady().then(async () => {
 
   try {
     if (app.isPackaged) {
-      await startPostgres();
-      await waitForPostgres();
+      try {
+        await startPostgres();
+        await waitForPostgres();
+      } catch (pgErr) {
+        // First attempt failed — force-clean any lock files and retry once
+        log(`Postgres start failed (${pgErr.message}), retrying with clean state...`);
+        setSplashMsg('Retrying database startup...');
+        const { PG_DATA, pgCtl } = paths();
+        try { execFileSync(pgCtl, ['stop', '-D', PG_DATA, '-m', 'immediate'], { stdio: 'pipe', timeout: 15000 }); } catch (_) {}
+        const pidFile = path.join(PG_DATA, 'postmaster.pid');
+        if (fs.existsSync(pidFile)) { try { fs.unlinkSync(pidFile); } catch (_) {} }
+        Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 2000);
+        await startPostgres();
+        await waitForPostgres();
+      }
       applySchema();
       runMigrations();
       startBackend();
