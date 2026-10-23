@@ -46,13 +46,13 @@ function waitForPort(port, timeout = 30000) {
   });
 }
 
-function waitForPostgres(timeout = 60000) {
+function waitForPostgres(timeout = 120000) {
   const pgIsReady = path.join(binDir, 'postgres', 'bin', 'pg_isready.exe');
   return new Promise((resolve, reject) => {
     const start = Date.now();
     const check = () => {
       try {
-        execFileSync(pgIsReady, ['-h', 'localhost', '-p', String(PG_PORT), '-q'], { stdio: 'pipe' });
+        execFileSync(pgIsReady, ['-h', 'localhost', '-p', String(PG_PORT), '-q'], { stdio: 'pipe', timeout: 5000 });
         resolve();
       } catch (_) {
         if (Date.now() - start > timeout) return reject(new Error('PostgreSQL did not become ready in time'));
@@ -110,7 +110,13 @@ function initDb() {
 function startPostgres() {
   const { PG_DATA, pgCtl } = paths();
   return new Promise((resolve, reject) => {
-    try { execFileSync(pgCtl, ['stop', '-D', PG_DATA, '-m', 'immediate'], { stdio: 'pipe' }); } catch (_) {}
+    try { execFileSync(pgCtl, ['stop', '-D', PG_DATA, '-m', 'immediate'], { stdio: 'pipe', timeout: 15000 }); } catch (_) {}
+    // Remove stale postmaster.pid left by improper shutdown — pg_ctl start would exit 0 immediately
+    // thinking postgres is running, but it isn't, causing waitForPostgres to time out.
+    const pidFile = path.join(PG_DATA, 'postmaster.pid');
+    if (fs.existsSync(pidFile)) {
+      try { fs.unlinkSync(pidFile); log('Cleared stale postmaster.pid'); } catch (_) {}
+    }
     const schemaApplied = fs.existsSync(path.join(PG_DATA, '.schema_applied'));
     if (!fs.existsSync(path.join(PG_DATA, 'PG_VERSION')) || !schemaApplied) {
       initDb();
